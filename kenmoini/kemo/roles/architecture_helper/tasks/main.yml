@@ -1,0 +1,27 @@
+---
+# tasks file for architecture_helper
+- name: Set facts for detected architecture
+  set_fact:
+    detected_architecture: "{{ ansible_architecture }}"
+
+- name: Set facts for architecture if this is a X86 64-bit system
+  when: ansible_architecture == "x86_64"
+  set_fact:
+    rpm_architecture: "x86_64"
+    deb_architecture: "amd64"
+
+- name: Set facts for architecture if this is an X86 32-bit system
+  when: ansible_architecture == "i386" or ansible_architecture == "i686"
+  set_fact:
+    rpm_architecture: "i386"
+    deb_architecture: "i386"
+
+- name: Set facts for architecture if this is an ARM 64 system
+  when: ansible_architecture == "aarch64" or ansible_architecture == "arm64" or ansible_architecture == "armv8l" or ansible_architecture == "armv8b" or ansible_architecture == "aarch64_be"
+  set_fact:
+    rpm_architecture: "aarch64"
+    deb_architecture: "arm64"
+
+- name: Display architecture facts
+  debug:
+    msg: "Detected Architecture: {{ detected_architecture }} | RPM Architecture: {{ rpm_architecture }} | DEB Architecture: {{ deb_architecture }}"
