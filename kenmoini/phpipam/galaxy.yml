@@ -18,7 +18,6 @@ readme: README.md
 authors:
 - Ken Moini <ken@kenmoini.com>
 
-
 ### OPTIONAL but strongly recommended
 # A short summary description of the collection
 description: Simple modules to interact with phpIPAM API
