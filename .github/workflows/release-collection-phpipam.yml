@@ -1,11 +1,13 @@
 ---
-name: Deploy Collection - kenmoini.kemo
+name: Deploy Collection - kenmoini.phpipam
 
 # Trigger the workflow however you prefer
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - v*
+    paths:
+      - kenmoini/phpipam/**
 
 jobs:
   deploy:
@@ -17,4 +19,4 @@ jobs:
         uses: artis3n/ansible_galaxy_collection@v2
         with:
           api_key: '${{ secrets.GALAXY_API_KEY }}'
-          collection_dir: 'kenmoini/kemo'
+          collection_dir: 'kenmoini/phpipam'
