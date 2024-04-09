@@ -17,46 +17,89 @@
 
   tasks:
 
-    - name: List all accounts
-      kenmoini.powerdns_admin.account_info:
+    # - name: List all accounts
+    #   kenmoini.powerdns_admin.account_info:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_username: "{{ powerdns_admin_username }}"
+    #     pdns_admin_password: "{{ powerdns_admin_password }}"
+    #     skip_tls_verify: true
+    #   register: accounts_info
+
+    # - name: Debug the account info
+    #   debug:
+    #     var: accounts_info
+
+    # - name: Find all accounts with a specific email
+    #   kenmoini.powerdns_admin.account_info:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_username: "{{ powerdns_admin_username }}"
+    #     pdns_admin_password: "{{ powerdns_admin_password }}"
+    #     skip_tls_verify: true
+    #     mail: ken@kenmoini.com
+    #   register: email_accounts_info
+
+    # - name: Debug the email searched account info
+    #   debug:
+    #     var: email_accounts_info
+
+    # - name: Create an account
+    #   kenmoini.powerdns_admin.account:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_username: "{{ powerdns_admin_username }}"
+    #     pdns_admin_password: "{{ powerdns_admin_password }}"
+    #     skip_tls_verify: true
+    #     #state: absent
+    #     name: "{{ item.name }}"
+    #     description: "{{ item.description | default(omit) }}"
+    #     contact: "{{ item.contact | default(omit) }}"
+    #     email: "{{ item.email | default(omit) }}"
+    #   loop: "{{ accounts }}"
+    #   register: account_creation
+
+    # - name: Debug the account creation
+    #   debug:
+    #     var: account_creation
+
+    # - name: Get all the Servers from PowerDNS Admin
+    #   kenmoini.powerdns_admin.server_info:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
+    #   register: r_servers
+
+    # - name: Debug the servers
+    #   debug:
+    #     var: r_servers
+
+    # - name: Get a specific server from PowerDNS Admin
+    #   kenmoini.powerdns_admin.server_info:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
+    #     server: localhost
+    #   register: r_server
+
+    # - name: Debug the server
+    #   debug:
+    #     var: r_server
+
+    - name: Get all the Zones from PowerDNS Admin
+      kenmoini.powerdns_admin.zone_info:
         pdns_admin_url: "{{ powerdns_admin_url }}"
-        pdns_admin_username: "{{ powerdns_admin_username }}"
-        pdns_admin_password: "{{ powerdns_admin_password }}"
+        pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
         skip_tls_verify: true
-      register: accounts_info
+      register: r_zones
 
-    - name: Debug the account info
+    - name: Debug the zones
       debug:
-        var: accounts_info
+        var: r_zones
 
-    - name: Find all accounts with a specific email
-      kenmoini.powerdns_admin.account_info:
+    - name: Get a specific zone from PowerDNS Admin
+      kenmoini.powerdns_admin.zone_info:
         pdns_admin_url: "{{ powerdns_admin_url }}"
-        pdns_admin_username: "{{ powerdns_admin_username }}"
-        pdns_admin_password: "{{ powerdns_admin_password }}"
+        pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
         skip_tls_verify: true
-        mail: ken@kenmoini.com
-      register: email_accounts_info
+        id: raza-gpu-sno.kemo.labs.
+      register: r_zone
 
-    - name: Debug the email searched account info
+    - name: Debug the zone
       debug:
-        var: email_accounts_info
-
-    - name: Create an account
-      kenmoini.powerdns_admin.account:
-        pdns_admin_url: "{{ powerdns_admin_url }}"
-        #pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
-        pdns_admin_username: "{{ powerdns_admin_username }}"
-        pdns_admin_password: "{{ powerdns_admin_password }}"
-        skip_tls_verify: true
-        #state: absent
-        name: "{{ item.name }}"
-        description: "{{ item.description | default(omit) }}"
-        contact: "{{ item.contact | default(omit) }}"
-        email: "{{ item.email | default(omit) }}"
-      loop: "{{ accounts }}"
-      register: account_creation
-
-    - name: Debug the account creation
-      debug:
-        var: account_creation
+        var: r_zone

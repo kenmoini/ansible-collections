@@ -33,11 +33,6 @@ options:
         - This is the password for your PowerDNS Admin instance
     required: true
     aliases: ['password']
-  pdns_admin_api_key:
-    description:
-      - This is the API Key for your PowerDNS Admin instance
-    required: true
-    aliases: ['api_key']
   pdns_admin_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
@@ -77,7 +72,8 @@ EXAMPLES = '''
 - name: Create an Account in PowerDNS Admin
   kenmoini.powerdns_admin.account:
     pdns_admin_url: https://phpipam.example.com
-    pdns_admin_api_key: 1234567890
+    pdns_admin_username: ansible
+    pdns_admin_password: password
     state: present
     name: testaccount
     description: This is a test account
@@ -87,7 +83,8 @@ EXAMPLES = '''
 - name: Delete an Account in PowerDNS Admin
   kenmoini.powerdns_admin.account:
     pdns_admin_url: https://phpipam.example.com
-    pdns_admin_api_key: 1234567890
+    pdns_admin_username: ansible
+    pdns_admin_password: password
     state: absent
     name: testaccount
 '''
@@ -110,7 +107,6 @@ def run_module():
         pdns_admin_url=dict(type='str', required=True, aliases=['url']),
         pdns_admin_username=dict(type='str', required=True, aliases=['username']),
         pdns_admin_password=dict(type='str', required=True, aliases=['password'], no_log=True),
-        #pdns_admin_api_key=dict(type='str', required=True, no_log=True),
         pdns_admin_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify']),
         state=dict(type='str', required=False, default='present', choices=['present', 'absent']),
         name=dict(type='str', required=True),
@@ -147,7 +143,6 @@ def run_module():
     headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Basic ' + base64_bytes.decode('ascii'),
-        #'X-API-Key': module.params['pdns_admin_api_key']
     }
 
     targetURL = module.params['pdns_admin_url'] + '/api/v1/pdnsadmin/accounts'
