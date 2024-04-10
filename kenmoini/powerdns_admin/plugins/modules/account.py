@@ -23,16 +23,19 @@ options:
       - This is the URL of your PowerDNS Admin instance
     required: true
     aliases: ['url']
+    type: str
   pdns_admin_username:
     description:
         - This is the username for your PowerDNS Admin instance
     required: true
     aliases: ['username']
+    type: str
   pdns_admin_password:
     description:
         - This is the password for your PowerDNS Admin instance
     required: true
     aliases: ['password']
+    type: str
   pdns_admin_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
@@ -46,22 +49,28 @@ options:
     required: false
     default: present
     choices: ['present', 'absent']
+    type: str
   name:
     description:
       - The name of the account - alphanumeric characters only
     required: true
+    type: str
   description:
     description:
       - The description of the account
     required: false
+    type: str
   contact:
     description:
       - The contact name of the account
     required: false
-  email:
+    type: str
+  mail:
     description:
       - The email address of the account
     required: false
+    aliases: ['email']
+    type: str
 
 author:
     - Ken Moini (@kenmoini)
@@ -207,12 +216,6 @@ def run_module():
         response = requests.post(targetURL, headers=headers, data=json.dumps(payload), verify=module.params['pdns_admin_skip_tls_verify'])
         result['account'] = response.json()
         result['changed'] = True
-
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
-    #result['account'] = listResponse.json()
-    #result['account'] = listResponse.json().get('data')
-    #result['changed'] = False
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results

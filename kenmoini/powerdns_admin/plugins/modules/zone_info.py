@@ -23,11 +23,13 @@ options:
       - This is the URL of your PowerDNS Admin instance
     required: true
     aliases: ['url']
+    type: str
   pdns_admin_api_key:
     description:
       - This is the API Key for your PowerDNS Admin instance
     required: true
     aliases: ['api_key']
+    type: str
   pdns_admin_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
@@ -41,20 +43,24 @@ options:
     required: false
     default: localhost
     aliases: ['server_id']
+    type: str
   id:
     description:
       - The Zone to find by ID
     required: false
     aliases: ['zone_id']
+    type: str
   name:
     description:
       - The Zone to find by Name
     required: false
     aliases: ['zone_name']
+    type: str
   account:
     description:
       - The Zones to find by Account
     required: false
+    type: str
 
 author:
     - Ken Moini (@kenmoini)

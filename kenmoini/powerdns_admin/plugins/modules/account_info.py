@@ -23,16 +23,19 @@ options:
       - This is the URL of your PowerDNS Admin instance
     required: true
     aliases: ['url']
+    type: str
   pdns_admin_username:
     description:
         - This is the username for your PowerDNS Admin instance
     required: true
     aliases: ['username']
+    type: str
   pdns_admin_password:
     description:
         - This is the password for your PowerDNS Admin instance
     required: true
     aliases: ['password']
+    type: str
   pdns_admin_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
@@ -44,14 +47,18 @@ options:
     description:
       - The name of the account to find - alphanumeric characters only
     required: false
+    type: str
   contact:
     description:
       - The contact name of the account(s) to find
     required: false
-  email:
+    type: str
+  mail:
     description:
       - The email address of the account(s) to find
     required: false
+    aliases: ['email']
+    type: str
 
 author:
     - Ken Moini (@kenmoini)
