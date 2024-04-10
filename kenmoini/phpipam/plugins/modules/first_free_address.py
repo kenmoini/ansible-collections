@@ -22,31 +22,38 @@ options:
     description:
       - This is the ID of the subnet you want to get the first free IP Address from
     required: true
+    type: int
+    aliases: ['subnet']
   phpipam_url:
     description:
       - This is the URL of your phpIPAM instance
     required: true
+    type: str
   phpipam_app_id:
     description:
       - This is the app ID for your phpIPAM instance
     required: true
+    type: str
   phpipam_app_code:
     description:
       - This is the app code for your phpIPAM instance
     required: true
+    type: str
   phpipam_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
     required: false
     default: false
+    type: bool
+    aliases: ['skip_tls_verify']
 
 author:
     - Ken Moini (@kenmoini)
 '''
 
 EXAMPLES = '''
-# Pass in a message
-- name: Test with a message
+# Get the first free IP Address from a subnet
+- name: Find a free IP Address in the target subnet
   kenmoini.phpipam.first_free_address:
     subnet_id: 123
     phpipam_url: https://phpipam.example.com
@@ -72,8 +79,8 @@ def run_module():
         phpipam_url=dict(type='str', required=True),
         phpipam_app_id=dict(type='str', required=True),
         phpipam_app_code=dict(type='str', required=True, no_log=True),
-        phpipam_skip_tls_verify=dict(type='bool', required=False, default=False),
-        subnet_id=dict(type='str', required=True),
+        phpipam_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify']),
+        subnet_id=dict(type='int', required=True, aliases=['subnet']),
     )
 
     # seed the result dict in the object
@@ -100,7 +107,7 @@ def run_module():
         'token': module.params['phpipam_app_code']
     }
 
-    targetURL = module.params['phpipam_url'] + '/api/' + module.params['phpipam_app_id'] + '/addresses/first_free/' + module.params['subnet_id']
+    targetURL = module.params['phpipam_url'] + '/api/' + module.params['phpipam_app_id'] + '/addresses/first_free/' + str(module.params['subnet_id'])
 
     response = requests.get(targetURL, headers=headers, verify=module.params['phpipam_skip_tls_verify'])
 

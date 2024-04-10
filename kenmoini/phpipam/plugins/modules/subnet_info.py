@@ -22,31 +22,38 @@ options:
     description:
       - This is the CIDR of the subnet you want to get information about
     required: true
+    aliases: ['subnet']
+    type: str
   phpipam_url:
     description:
       - This is the URL of your phpIPAM instance
     required: true
+    type: str
   phpipam_app_id:
     description:
       - This is the app ID for your phpIPAM instance
     required: true
+    type: str
   phpipam_app_code:
     description:
       - This is the app code for your phpIPAM instance
     required: true
+    type: str
   phpipam_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
     required: false
     default: false
+    type: bool
+    aliases: ['skip_tls_verify']
 
 author:
     - Ken Moini (@kenmoini)
 '''
 
 EXAMPLES = '''
-# Pass in a message
-- name: Test with a message
+# Get the information about a specific subnet
+- name: Retrieve information about a specific subnet
   kenmoini.phpipam.subnet_info:
     cidr: 192.168.42.0/23
     phpipam_url: https://phpipam.example.com
@@ -72,7 +79,7 @@ def run_module():
         phpipam_url=dict(type='str', required=True),
         phpipam_app_id=dict(type='str', required=True),
         phpipam_app_code=dict(type='str', required=True, no_log=True),
-        phpipam_skip_tls_verify=dict(type='bool', required=False, default=False),
+        phpipam_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify']),
         cidr=dict(type='str', required=True, aliases=['subnet']),
     )
 

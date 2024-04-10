@@ -22,23 +22,30 @@ options:
     description:
       - This is the IP Address you want to get information about
     required: true
+    type: str
+    aliases: ['address', 'ip_address']
   phpipam_url:
     description:
       - This is the URL of your phpIPAM instance
     required: true
+    type: str
   phpipam_app_id:
     description:
       - This is the app ID for your phpIPAM instance
     required: true
+    type: str
   phpipam_app_code:
     description:
       - This is the app code for your phpIPAM instance
     required: true
+    type: str
   phpipam_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
     required: false
     default: false
+    type: bool
+    aliases: ['skip_tls_verify']
 
 author:
     - Ken Moini (@kenmoini)
@@ -72,8 +79,8 @@ def run_module():
         phpipam_url=dict(type='str', required=True),
         phpipam_app_id=dict(type='str', required=True),
         phpipam_app_code=dict(type='str', required=True, no_log=True),
-        phpipam_skip_tls_verify=dict(type='bool', required=False, default=False),
-        ip=dict(type='str', required=True),
+        phpipam_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify']),
+        ip=dict(type='str', required=True, aliases=['address', 'ip_address']),
     )
 
     # seed the result dict in the object

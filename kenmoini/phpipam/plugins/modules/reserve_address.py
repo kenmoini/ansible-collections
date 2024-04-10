@@ -22,61 +22,78 @@ options:
     description:
       - This is the URL of your phpIPAM instance
     required: true
+    type: str
   phpipam_app_id:
     description:
       - This is the app ID for your phpIPAM instance
     required: true
+    type: str
   phpipam_app_code:
     description:
       - This is the app code for your phpIPAM instance
     required: true
+    type: str
   phpipam_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
     required: false
     default: false
+    type: bool
+    aliases: ['skip_tls_verify']
   subnet_id:
     description:
       - This is the ID of the subnet you want to get the first free IP Address from
     required: true
+    type: int
+    aliases: ['subnet']
   ip:
     description:
       - This is the IP Address you want to reserve
     required: true
+    type: str
+    aliases: ['address', 'ip_address']
   hostname:
     description:
       - This is the hostname you want to assign to the IP Address
     required: false
+    type: str
   description:
     description:
       - This is the description you want to assign to the IP Address
     required: false
+    type: str
   tag:
     description:
       - This is the tag you want to assign to the IP Address
     required: false
     choices: ['offline', 'used', 'reserved', 'dhcp']
     default: 'reserved'
+    type: str
   is_gateway:
     description:
       - Whether or not the IP Address is a gateway
     required: false
+    type: bool
   ping_exclude:
     description:
       - Whether or not to exclude the IP Address from pings
     required: false
+    type: bool
   ptr_exclude:
     description:
       - Whether or not to exclude the IP Address from PTR records
     required: false
+    type: bool
   owner:
     description:
       - The owner of the IP Address
     required: false
+    type: str
   note:
     description:
       - A note about the IP Address
     required: false
+    type: str
 
 author:
     - Ken Moini (@kenmoini)
@@ -114,10 +131,10 @@ def run_module():
         phpipam_url=dict(type='str', required=True),
         phpipam_app_id=dict(type='str', required=True),
         phpipam_app_code=dict(type='str', required=True, no_log=True),
-        phpipam_skip_tls_verify=dict(type='bool', required=False, default=False),
+        phpipam_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify']),
 
-        subnet_id=dict(type='int', required=True),
-        ip=dict(type='str', required=True),
+        subnet_id=dict(type='int', required=True, aliases=['subnet']),
+        ip=dict(type='str', required=True, aliases=['address', 'ip_address']),
 
         hostname=dict(type='str', required=False),
         description=dict(type='str', required=False),
@@ -140,8 +157,6 @@ def run_module():
         changed=False,
         ip_address_id=''
     )
-
-
 
     # the AnsibleModule object will be our abstraction working with Ansible
     # this includes instantiation, a couple of common attr would be the

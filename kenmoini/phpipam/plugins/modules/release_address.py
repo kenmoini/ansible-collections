@@ -22,27 +22,36 @@ options:
     description:
       - This is the ID of the subnet you want to release the IP Address from
     required: true
+    type: int
+    aliases: ['subnet']
   ip_id:
     description:
       - This is the ID of the IP Address you want to release
     required: true
+    type: int
+    aliases: ['address', 'ip_address']
   phpipam_url:
     description:
       - This is the URL of your phpIPAM instance
     required: true
+    type: str
   phpipam_app_id:
     description:
       - This is the app ID for your phpIPAM instance
     required: true
+    type: str
   phpipam_app_code:
     description:
       - This is the app code for your phpIPAM instance
     required: true
+    type: str
   phpipam_skip_tls_verify:
     description:
       - Whether or not to skip TLS verification
     required: false
     default: false
+    type: bool
+    aliases: ['skip_tls_verify']
 
 author:
     - Ken Moini (@kenmoini)
@@ -79,8 +88,8 @@ def run_module():
         phpipam_app_code=dict(type='str', required=True, no_log=True),
         phpipam_skip_tls_verify=dict(type='bool', required=False, default=False),
 
-        subnet_id=dict(type='int', required=True),
-        ip_id=dict(type='int', required=True),
+        subnet_id=dict(type='int', required=True, aliases=['subnet']),
+        ip_id=dict(type='int', required=True, aliases=['address', 'ip_address']),
     )
 
     # seed the result dict in the object
