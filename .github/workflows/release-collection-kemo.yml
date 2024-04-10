@@ -1,5 +1,5 @@
 ---
-name: Deploy Collection - kenmoini.powerdns_admin
+name: Deploy Collection - kenmoini.kemo
 
 # Trigger the workflow however you prefer
 on:
@@ -7,7 +7,7 @@ on:
     # tags:
     #   - v*
     paths:
-      - kenmoini/powerdns_admin/galaxy.yml
+      - kenmoini/kemo/galaxy.yml
 
 jobs:
   deploy:
@@ -19,4 +19,4 @@ jobs:
         uses: artis3n/ansible_galaxy_collection@v2
         with:
           api_key: '${{ secrets.GALAXY_API_KEY }}'
-          collection_dir: 'kenmoini/powerdns_admin'
+          collection_dir: 'kenmoini/kemo'

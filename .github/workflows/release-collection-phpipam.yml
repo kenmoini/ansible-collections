@@ -4,10 +4,10 @@ name: Deploy Collection - kenmoini.phpipam
 # Trigger the workflow however you prefer
 on:
   push:
-    tags:
-      - v*
+    # tags:
+    #   - v*
     paths:
-      - kenmoini/phpipam/**
+      - kenmoini/phpipam/galaxy.yml
 
 jobs:
   deploy:
