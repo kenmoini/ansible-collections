@@ -7,7 +7,8 @@ on:
     # tags:
     #   - v*
     paths:
-      - kenmoini/redfish/
+      - kenmoini/redfish/**
+      - .github/workflows/release-collection-redfish.yml
 
 jobs:
   deploy:
