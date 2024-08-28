@@ -1,0 +1,19 @@
+---
+- name: Insert the target ISO into the Virtual CD Device - SuperMicro
+  ansible.builtin.uri:
+    force_basic_auth: true
+    user: "{{ host.username }}"
+    password: "{{ host.password }}"
+    validate_certs: false
+    return_content: true
+    method: POST
+    url: "{{ redfish_virtual_media_insert_endpoint }}"
+    body_format: json
+    body: '{"Image": "{{ iso_url }}"}'
+    status_code: 202
+  register: redfish_virtual_media_insert_result
+
+- name: Debug the result of the virtual media insert - SuperMicro
+  when: debug_redfish
+  ansible.builtin.debug:
+    msg: "{{ redfish_virtual_media_insert_result }}"

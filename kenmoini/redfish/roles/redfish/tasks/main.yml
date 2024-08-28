@@ -1,0 +1,9 @@
+---
+# tasks file for redfish
+
+- name: Host entry point task
+  ansible.builtin.include_tasks:
+    file: host_entrypoint.yml
+  loop: "{{ bmc_hosts }}"
+  loop_control:
+    loop_var: host
