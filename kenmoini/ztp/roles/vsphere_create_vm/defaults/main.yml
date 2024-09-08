@@ -1,0 +1,28 @@
+---
+# defaults file for vsphere_create_vm
+vsphere_datacetner: my-datacenter
+vsphere_cluster: my-cluster
+vsphere_datastore: my-datastore
+vsphere_network: my-network
+vsphere_guest_id: coreos64Guest
+vsphere_folder: my-folder
+#vsphere_resource_pool: my-resource-pool
+
+vm_name: my-vm
+vm_memory_mb: 1024
+vm_cpu_count: 1
+vm_cpu_cores: 2
+
+vm_disks:
+  - size_gb: 20
+    type: thin
+
+vm_nics:
+  - name: "{{ vsphere_network }}"
+    device_type: vmxnet3
+    connected: true
+    start_connected: true
+
+vm_advanced_settings:
+  - key: disk.enableUUID
+    value: "TRUE"
