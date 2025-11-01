@@ -47,16 +47,19 @@ options:
     description:
       - The Zone to find Records in
     required: true
+    aliases: ['zone_id']
     type: str
   record:
     description:
       - The Record to find
     required: false
+    aliases: ['name']
     type: str
   record_type:
     description:
       - The Record Type to find
     required: false
+    aliases: ['type']
     type: str
 
 author:
@@ -105,8 +108,8 @@ def run_module():
         pdns_admin_skip_tls_verify=dict(type='bool', default=False, aliases=['skip_tls_verify']),
         pdns_server_id=dict(type='str', default="localhost", aliases=['server_id']),
         zone=dict(type='str', required=True, aliases=['zone_id']),
-        record=dict(type='str', required=False),
-        record_type=dict(type='str', required=False)
+        record=dict(type='str', required=False, aliases=['name']),
+        record_type=dict(type='str', required=False, aliases=['type'])
     )
     result = dict(
         changed=False,

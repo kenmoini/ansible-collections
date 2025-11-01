@@ -115,3 +115,20 @@
     - name: Debug the records
       debug:
         var: r_records
+
+    - name: Create/Update a record in a zone in PowerDNS Admin
+      kenmoini.powerdns_admin.record:
+        pdns_admin_url: "{{ powerdns_admin_url }}"
+        pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
+        skip_tls_verify: true
+        zone: ocp.lab.kemo.network.
+        name: testrecord.ocp.lab.kemo.network.
+        value: 192.0.2.2
+        type: A
+        ttl: 3600
+        state: present
+      register: record_change
+
+    - name: Debug the record change
+      debug:
+        var: record_change
