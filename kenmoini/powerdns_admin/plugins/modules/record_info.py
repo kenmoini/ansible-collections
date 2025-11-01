@@ -128,7 +128,24 @@ def run_module():
     # Get the current list of records
     listResponse = requests.get(targetURL, headers=headers, verify=module.params['pdns_admin_skip_tls_verify'])
 
-    result['records'] = listResponse.json().get('rrsets', [])
+    discoveredRecords = []
+    if module.params['record'] or module.params['record_type']:
+        # Loop through the records and filter them out
+        for record in listResponse.json().get('rrsets', []):
+            if module.params['record'] and module.params['record_type']:
+                if record['name'].rstrip('.') == module.params['record'].rstrip('.') and record['type'] == module.params['record_type']:
+                    discoveredRecords.append(record)
+            elif module.params['record']:
+                if record['name'].rstrip('.') == module.params['record'].rstrip('.'):
+                    discoveredRecords.append(record)
+            elif module.params['record_type']:
+                if record['type'] == module.params['record_type']:
+                    discoveredRecords.append(record)
+
+    else:
+        discoveredRecords = listResponse.json().get('rrsets', [])
+
+    result['records'] = discoveredRecords
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
