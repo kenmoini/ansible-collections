@@ -4,10 +4,10 @@
   gather_facts: false
 
   vars:
-    powerdns_admin_url: "https://ns1.apps.k8s.kemo.labs"
-    powerdns_admin_api_key: Nmp4ZmdhSGszUUpiQ3JM # used for /server endpoints
+    powerdns_admin_url: "https://pdns.kemo.labs"
+    powerdns_admin_api_key: djdOaTR1YXFYTnFuMlVL # used for /server endpoints
     powerdns_admin_username: notansible # used for /pdnsadmin endpoints
-    powerdns_admin_password: s3cur3P455
+    powerdns_admin_password: n0tPassword
 
     accounts:
       - name: someaccount
@@ -17,17 +17,17 @@
 
   tasks:
 
-    # - name: List all accounts
-    #   kenmoini.powerdns_admin.account_info:
-    #     pdns_admin_url: "{{ powerdns_admin_url }}"
-    #     pdns_admin_username: "{{ powerdns_admin_username }}"
-    #     pdns_admin_password: "{{ powerdns_admin_password }}"
-    #     skip_tls_verify: true
-    #   register: accounts_info
+    - name: List all accounts
+      kenmoini.powerdns_admin.account_info:
+        pdns_admin_url: "{{ powerdns_admin_url }}"
+        pdns_admin_username: "{{ powerdns_admin_username }}"
+        pdns_admin_password: "{{ powerdns_admin_password }}"
+        skip_tls_verify: true
+      register: accounts_info
 
-    # - name: Debug the account info
-    #   debug:
-    #     var: accounts_info
+    - name: Debug the account info
+      debug:
+        var: accounts_info
 
     # - name: Find all accounts with a specific email
     #   kenmoini.powerdns_admin.account_info:
@@ -97,9 +97,21 @@
         pdns_admin_url: "{{ powerdns_admin_url }}"
         pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
         skip_tls_verify: true
-        id: raza-gpu-sno.kemo.labs.
+        id: ocp.lab.kemo.network.
       register: r_zone
 
     - name: Debug the zone
       debug:
         var: r_zone
+
+    - name: Get all the records in a zone from PowerDNS Admin
+      kenmoini.powerdns_admin.record_info:
+        pdns_admin_url: "{{ powerdns_admin_url }}"
+        pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
+        skip_tls_verify: true
+        zone: ocp.lab.kemo.network.
+      register: r_records
+
+    - name: Debug the records
+      debug:
+        var: r_records
