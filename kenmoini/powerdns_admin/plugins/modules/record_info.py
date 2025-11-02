@@ -129,7 +129,7 @@ def run_module():
     targetURL = module.params['pdns_admin_url'] + '/api/v1/servers/' + str(module.params['pdns_server_id']) + '/zones/' + module.params['zone']
 
     # Get the current list of records
-    listResponse = requests.get(targetURL, headers=headers, verify=module.params['pdns_admin_skip_tls_verify'])
+    listResponse = requests.get(targetURL, headers=headers, verify=not module.params['pdns_admin_skip_tls_verify'])
 
     discoveredRecords = []
     if module.params['record'] or module.params['record_type']:

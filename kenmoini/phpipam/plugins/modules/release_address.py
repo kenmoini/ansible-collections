@@ -119,7 +119,7 @@ def run_module():
     # make the API call
     targetURL = module.params['phpipam_url'] + '/api/' + module.params['phpipam_app_id'] + '/addresses/' + str(module.params['ip_id']) + '/' + str(module.params['subnet_id']) + '/'
 
-    response = requests.delete(targetURL, headers=headers, verify=module.params['phpipam_skip_tls_verify'])
+    response = requests.delete(targetURL, headers=headers, verify=not module.params['phpipam_skip_tls_verify'])
     responseJSON = response.json()
 
     # manipulate or modify the state as needed (this is going to be the

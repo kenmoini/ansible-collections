@@ -135,7 +135,7 @@ def run_module():
     targetURL = module.params['pdns_admin_url'] + '/api/v1/servers/' + module.params['server'] + '/zones'
 
     # Get the current list of Zones
-    listResponse = requests.get(targetURL, headers=headers, verify=module.params['pdns_admin_skip_tls_verify'])
+    listResponse = requests.get(targetURL, headers=headers, verify=not module.params['pdns_admin_skip_tls_verify'])
 
     discoveredZones = []
 

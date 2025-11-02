@@ -175,11 +175,11 @@ def run_module():
     }
 
     # Get the current list of records
-    listResponse = requests.patch(targetURL, headers=headers, json=payload, verify=module.params['pdns_admin_skip_tls_verify'])
+    listResponse = requests.patch(targetURL, headers=headers, json=payload, verify=not module.params['pdns_admin_skip_tls_verify'])
 
     if listResponse.status_code in [200, 201, 204]:
         # Fetch the updated record details
-        getResponse = requests.get(targetURL, headers=headers, verify=module.params['pdns_admin_skip_tls_verify'])
+        getResponse = requests.get(targetURL, headers=headers, verify=not module.params['pdns_admin_skip_tls_verify'])
         for record in getResponse.json().get('rrsets', []):
             if record['name'].rstrip('.') == module.params['record_name'].rstrip('.') and record['type'] == module.params['record_type']:
                 result['record'] = record

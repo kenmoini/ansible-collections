@@ -143,13 +143,13 @@ def run_module():
     targetURL = module.params['pdns_admin_url'] + '/api/v1/servers/' + module.params['pdns_server_id'] + '/zones'
 
     # Check to see if the zone exists
-    apiResponse = requests.get(targetURL + '/' + module.params['zone_name'], headers=headers, verify=module.params['pdns_admin_skip_tls_verify'])
+    apiResponse = requests.get(targetURL + '/' + module.params['zone_name'], headers=headers, verify=not module.params['pdns_admin_skip_tls_verify'])
     zone_exists = apiResponse.status_code == 200
     if zone_exists:
       # Delete the Zone if state is absent
       if module.params['state'] == 'absent':
           targetURL += '/' + module.params['zone_name']
-          apiResponse = requests.delete(targetURL, headers=headers, verify=module.params['pdns_admin_skip_tls_verify'])
+          apiResponse = requests.delete(targetURL, headers=headers, verify=not module.params['pdns_admin_skip_tls_verify'])
           if apiResponse.status_code == 204:
               result['changed'] = True
           else:
@@ -173,7 +173,7 @@ def run_module():
               zone_payload['account'] = module.params['account']
 
           if needs_update:
-              apiResponse = requests.put(targetURL + '/' + module.params['zone_name'], headers=headers, json=zone_payload, verify=module.params['pdns_admin_skip_tls_verify'])
+              apiResponse = requests.put(targetURL + '/' + module.params['zone_name'], headers=headers, json=zone_payload, verify=not module.params['pdns_admin_skip_tls_verify'])
 
               if apiResponse.status_code == 204:
                   result['changed'] = True
@@ -204,7 +204,7 @@ def run_module():
             if module.params['account']:
                 zone_payload['account'] = module.params['account']
 
-            apiResponse = requests.post(targetURL, headers=headers, json=zone_payload, verify=module.params['pdns_admin_skip_tls_verify'])
+            apiResponse = requests.post(targetURL, headers=headers, json=zone_payload, verify=not module.params['pdns_admin_skip_tls_verify'])
 
             if apiResponse.status_code == 201:
                 result['changed'] = True

@@ -109,7 +109,7 @@ def run_module():
 
     targetURL = module.params['phpipam_url'] + '/api/' + module.params['phpipam_app_id'] + '/addresses/first_free/' + str(module.params['subnet_id'])
 
-    response = requests.get(targetURL, headers=headers, verify=module.params['phpipam_skip_tls_verify'])
+    response = requests.get(targetURL, headers=headers, verify=not module.params['phpipam_skip_tls_verify'])
 
     # manipulate or modify the state as needed (this is going to be the
     # part where your module will do what it needs to do)

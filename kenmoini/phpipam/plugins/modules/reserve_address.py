@@ -202,7 +202,7 @@ def run_module():
     if module.params['ptr_exclude']:
         payload['ptr_exclude'] = module.params['ptr_exclude']
 
-    response = requests.post(targetURL, headers=headers, json=payload, verify=module.params['phpipam_skip_tls_verify'])
+    response = requests.post(targetURL, headers=headers, json=payload, verify=not module.params['phpipam_skip_tls_verify'])
     responseJSON = response.json()
 
     # manipulate or modify the state as needed (this is going to be the

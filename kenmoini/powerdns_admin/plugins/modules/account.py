@@ -157,7 +157,7 @@ def run_module():
     targetURL = module.params['pdns_admin_url'] + '/api/v1/pdnsadmin/accounts'
 
     # Get the current list of accounts
-    listResponse = requests.get(targetURL, headers=headers, verify=module.params['pdns_admin_skip_tls_verify'])
+    listResponse = requests.get(targetURL, headers=headers, verify=not module.params['pdns_admin_skip_tls_verify'])
 
     # Loop through the accounts
     accountFound = False
@@ -166,7 +166,7 @@ def run_module():
             accountFound = True
             if module.params['state'] == 'absent':
                 # Delete the account
-                deleteResponse = requests.delete(targetURL + '/' + str(account['id']), headers=headers, verify=module.params['pdns_admin_skip_tls_verify'])
+                deleteResponse = requests.delete(targetURL + '/' + str(account['id']), headers=headers, verify=not module.params['pdns_admin_skip_tls_verify'])
                 if deleteResponse.status_code == 204:
                   result['account'] = account
                   result['changed'] = True
@@ -186,7 +186,7 @@ def run_module():
                     payload['mail'] = module.params['mail']
                     dataChanged = True
 
-                updateResponse = requests.put(targetURL + '/' + str(account['id']), headers=headers, data=json.dumps(payload), verify=module.params['pdns_admin_skip_tls_verify'])
+                updateResponse = requests.put(targetURL + '/' + str(account['id']), headers=headers, data=json.dumps(payload), verify=not module.params['pdns_admin_skip_tls_verify'])
 
                 if updateResponse.status_code == 204:
                     newAccount = account
@@ -213,7 +213,7 @@ def run_module():
         if module.params['mail']:
             payload['mail'] = module.params['mail']
 
-        response = requests.post(targetURL, headers=headers, data=json.dumps(payload), verify=module.params['pdns_admin_skip_tls_verify'])
+        response = requests.post(targetURL, headers=headers, data=json.dumps(payload), verify=not module.params['pdns_admin_skip_tls_verify'])
         result['account'] = response.json()
         result['changed'] = True
 
