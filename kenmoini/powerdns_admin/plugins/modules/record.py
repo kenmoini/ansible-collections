@@ -61,12 +61,12 @@ options:
     required: true
     aliases: ['type']
     type: str
-  record_value:
+  record_values:
     description:
-      - The value of the Record to manage
-    required: true
-    aliases: ['value']
-    type: str
+      - A list of the values of the Record to manage. Each value is a dict with 'content' and optional 'disabled' boolean.
+    required: false
+    aliases: ['values']
+    type: list
   record_ttl:
     description:
       - The TTL of the Record to manage
@@ -79,7 +79,7 @@ options:
       - Whether the record should exist or not
     required: false
     default: present
-    choices: ['present', 'absent', 'disabled']
+    choices: ['present', 'absent']
     type: str
 
 author:
@@ -95,7 +95,11 @@ EXAMPLES = '''
     zone: example.com.
     record_name: www
     record_type: A
-    value: 192.0.2.1
+    values:
+      - content: 192.0.2.1
+        disabled: false
+      - content: 192.0.2.2
+        disabled: true
     ttl: 3600
     state: present
 
@@ -134,9 +138,9 @@ def run_module():
         zone=dict(type='str', required=True, aliases=['zone_id']),
         record_name=dict(type='str', required=True, aliases=['name', 'record']),
         record_type=dict(type='str', required=True, aliases=['type']),
-        record_value=dict(type='str', required=True, aliases=['value']),
+        record_values=dict(type='list', required=False, aliases=['values']),
         record_ttl=dict(type='int', required=False, default=3600, aliases=['ttl']),
-        state=dict(type='str', required=False, default='present', choices=['present', 'absent', 'disabled']),
+        state=dict(type='str', required=False, default='present', choices=['present', 'absent']),
     )
 
     result = dict(
@@ -156,6 +160,15 @@ def run_module():
 
     targetURL = module.params['pdns_admin_url'] + '/api/v1/servers/' + str(module.params['pdns_server_id']) + '/zones/' + module.params['zone']
 
+    # Create the record content
+    record_contents = []
+    if module.params['record_values']:
+        for value in module.params['record_values']:
+            record_contents.append({
+                "content": value.get('content'),
+                "disabled": value.get('disabled', False)
+            })
+
     # Create the payload for the API request
     payload = {
         "rrsets": [
@@ -164,12 +177,7 @@ def run_module():
                 "type": module.params['record_type'],
                 "changetype": "REPLACE" if module.params['state'] in ['present', 'disabled'] else "DELETE",
                 "ttl": module.params['record_ttl'],
-                "records": [
-                    {
-                        "content": module.params['record_value'],
-                        "disabled": module.params['state'] == 'disabled'
-                    }
-                ] if module.params['state'] in ['present', 'disabled'] else []
+                "records": record_contents
             }
         ]
     }

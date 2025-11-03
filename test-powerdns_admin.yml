@@ -5,7 +5,7 @@
 
   vars:
     powerdns_admin_url: "https://pdns.kemo.labs"
-    powerdns_admin_api_key: djdOaTR1YXFYTnFuMlVL # used for /server endpoints
+    powerdns_admin_api_key: asfasdfasdfasdf # used for /server endpoints
     powerdns_admin_username: notansible # used for /pdnsadmin endpoints
     powerdns_admin_password: n0tPassword
 
@@ -17,17 +17,17 @@
 
   tasks:
 
-    - name: List all accounts
-      kenmoini.powerdns_admin.account_info:
-        pdns_admin_url: "{{ powerdns_admin_url }}"
-        pdns_admin_username: "{{ powerdns_admin_username }}"
-        pdns_admin_password: "{{ powerdns_admin_password }}"
-        skip_tls_verify: true
-      register: accounts_info
+    # - name: List all accounts
+    #   kenmoini.powerdns_admin.account_info:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_username: "{{ powerdns_admin_username }}"
+    #     pdns_admin_password: "{{ powerdns_admin_password }}"
+    #     skip_tls_verify: true
+    #   register: accounts_info
 
-    - name: Debug the account info
-      debug:
-        var: accounts_info
+    # - name: Debug the account info
+    #   debug:
+    #     var: accounts_info
 
     # - name: Find all accounts with a specific email
     #   kenmoini.powerdns_admin.account_info:
@@ -42,23 +42,23 @@
     #   debug:
     #     var: email_accounts_info
 
-    - name: Create an account
-      kenmoini.powerdns_admin.account:
-        pdns_admin_url: "{{ powerdns_admin_url }}"
-        pdns_admin_username: "{{ powerdns_admin_username }}"
-        pdns_admin_password: "{{ powerdns_admin_password }}"
-        skip_tls_verify: true
-        state: absent
-        name: "{{ item.name }}"
-        description: "{{ item.description | default(omit) }}"
-        contact: "{{ item.contact | default(omit) }}"
-        email: "{{ item.email | default(omit) }}"
-      loop: "{{ accounts }}"
-      register: account_creation
+    # - name: Create an account
+    #   kenmoini.powerdns_admin.account:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_username: "{{ powerdns_admin_username }}"
+    #     pdns_admin_password: "{{ powerdns_admin_password }}"
+    #     skip_tls_verify: true
+    #     state: absent
+    #     name: "{{ item.name }}"
+    #     description: "{{ item.description | default(omit) }}"
+    #     contact: "{{ item.contact | default(omit) }}"
+    #     email: "{{ item.email | default(omit) }}"
+    #   loop: "{{ accounts }}"
+    #   register: account_creation
 
-    - name: Debug the account creation
-      debug:
-        var: account_creation
+    # - name: Debug the account creation
+    #   debug:
+    #     var: account_creation
 
     # - name: Get all the Servers from PowerDNS Admin
     #   kenmoini.powerdns_admin.server_info:
@@ -81,31 +81,31 @@
     #   debug:
     #     var: r_server
 
-    - name: Create a Zone in PowerDNS Admin
-      kenmoini.powerdns_admin.zone:
-        pdns_admin_url: "{{ powerdns_admin_url }}"
-        pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
-        skip_tls_verify: true
-        name: test.lab.kemo.network.
-        zone_type: Native
-        # account: someaccount
-        #state: absent
-      register: zone_creation
+    # - name: Create a Zone in PowerDNS Admin
+    #   kenmoini.powerdns_admin.zone:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
+    #     skip_tls_verify: true
+    #     name: test.lab.kemo.network.
+    #     zone_type: Native
+    #     # account: someaccount
+    #     #state: absent
+    #   register: zone_creation
 
-    - name: Debug the zone creation
-      debug:
-        var: zone_creation
+    # - name: Debug the zone creation
+    #   debug:
+    #     var: zone_creation
 
-    - name: Get all the Zones from PowerDNS Admin
-      kenmoini.powerdns_admin.zone_info:
-        pdns_admin_url: "{{ powerdns_admin_url }}"
-        pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
-        skip_tls_verify: true
-      register: r_zones
+    # - name: Get all the Zones from PowerDNS Admin
+    #   kenmoini.powerdns_admin.zone_info:
+    #     pdns_admin_url: "{{ powerdns_admin_url }}"
+    #     pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
+    #     skip_tls_verify: true
+    #   register: r_zones
 
-    - name: Debug the zones
-      debug:
-        var: r_zones
+    # - name: Debug the zones
+    #   debug:
+    #     var: r_zones
 
     # - name: Get a specific zone from PowerDNS Admin
     #   kenmoini.powerdns_admin.zone_info:
@@ -131,6 +131,20 @@
     #   debug:
     #     var: r_records
 
+    - name: Get a specific record set from the records in a zone from PowerDNS Admin
+      kenmoini.powerdns_admin.record_info:
+        pdns_admin_url: "{{ powerdns_admin_url }}"
+        pdns_admin_api_key: "{{ powerdns_admin_api_key }}"
+        skip_tls_verify: true
+        zone: ocp.lab.kemo.network.
+        type: NS
+        name: 'ocp.lab.kemo.network.'
+      register: r_records
+
+    - name: Debug the records
+      debug:
+        var: r_records
+
     # - name: Create/Update a record in a zone in PowerDNS Admin
     #   kenmoini.powerdns_admin.record:
     #     pdns_admin_url: "{{ powerdns_admin_url }}"
@@ -138,7 +152,9 @@
     #     skip_tls_verify: true
     #     zone: test.lab.kemo.network.
     #     name: testrecord.test.lab.kemo.network.
-    #     value: 192.0.2.2
+    #     values:
+    #       - content: 192.0.2.1
+    #       - content: 192.0.2.2
     #     type: A
     #     ttl: 3600
     #     state: present
