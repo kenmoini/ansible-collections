@@ -39,8 +39,9 @@ options:
     type: bool
   server:
     description:
-      - The Server to find
+      - The Server to find, eg localhost, or empty for all Servers
     required: false
+    aliases: ['server_id']
     type: str
 
 author:
@@ -82,7 +83,7 @@ def run_module():
         pdns_admin_url=dict(type='str', required=True, aliases=['url']),
         pdns_admin_api_key=dict(type='str', required=True, no_log=True, aliases=['api_key']),
         pdns_admin_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify']),
-        server=dict(type='str', required=False),
+        server=dict(type='str', required=False, aliases=['server_id']),
     )
 
     # seed the result dict in the object

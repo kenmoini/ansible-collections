@@ -47,7 +47,7 @@ options:
     description:
       - The name of the Zone to manage
     required: true
-    aliases: ['name', 'zone']
+    aliases: ['name', 'zone', 'zone_id', 'id']
     type: str
   zone_type:
     description:
@@ -119,7 +119,7 @@ def run_module():
         pdns_admin_api_key=dict(type='str', required=True, no_log=True, aliases=['api_key']),
         pdns_admin_skip_tls_verify=dict(type='bool', default=False, aliases=['skip_tls_verify']),
         pdns_server_id=dict(type='str', default="localhost", aliases=['server_id']),
-        zone_name=dict(type='str', required=True, aliases=['name', 'zone']),
+        zone_name=dict(type='str', required=True, aliases=['name', 'zone', 'zone_id', 'id']),
         zone_type=dict(type='str', choices=['Native', 'Master', 'Slave'], default='Native'),
         soa_edit_api=dict(type='str', choices=['DEFAULT', 'INCREASE', 'EPOCH', 'OFF'], default='DEFAULT'),
         account=dict(type='str'),
