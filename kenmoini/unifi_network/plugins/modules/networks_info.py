@@ -34,6 +34,17 @@ EXAMPLES = '''
     unifi_network_api_key: 1234567890
     unifi_network_site_id: 88f7af54-1234-5678-9101-abcdefghijklm
   register: r_networks_info
+
+- name: Get a specific Network by Name
+  kenmoini.unifi_network.networks_info:
+    unifi_network_url: https://unifi.example.com
+    unifi_network_api_key: 1234567890
+    unifi_network_site_id: 88f7af54-1234-5678-9101-abcdefghijklm
+    filters:
+      property: "name"
+      function: "eq"
+      value: "My Network Name"
+  register: r_specific_network_info
 '''
 
 RETURN = '''
