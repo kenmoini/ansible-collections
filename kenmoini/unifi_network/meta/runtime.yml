@@ -46,8 +46,35 @@ requires_ansible: '>=2.9.10'
 #   ansible_collections.ns.col.plugins.module_utils.old_location:
 #     redirect: ansible_collections.ns.col.plugins.module_utils.new_location
 
-# Groups of actions/modules that take a common set of options
-# action_groups:
-#   group_name:
-#     - module1
-#     - module2
+
+action_groups:
+  fullset:
+    - acl_rules_info
+    - acl_rule_info
+    - adopted_devices_info
+    - application_info
+    - client_info
+    - clients_info
+    - countries_info
+    - device_info
+    - device_statistics
+    - device_tags_info
+    - dpi_applications_info
+    - dpi_categories_info
+    - firewall_zone_info
+    - firewall_zones_info
+    - hotspot_voucher_info
+    - hotspot_vouchers_info
+    - network_info
+    - network_references
+    - networks_info
+    - pending_devices
+    - radius_profiles_info
+    - site_info
+    - site_to_site_tunnels_info
+    - traffic_matching_list_info
+    - traffic_matching_lists_info
+    - vpn_servers_info
+    - wan_interfaces_info
+    - wifi_broadcast_info
+    - wifi_broadcasts_info

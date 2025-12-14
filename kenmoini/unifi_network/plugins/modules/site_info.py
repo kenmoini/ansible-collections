@@ -40,18 +40,16 @@ site_info:
     returned: always
 '''
 
+import requests, copy
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.parameters import env_fallback
 from ..module_utils.check_response_errors import check_response_errors
-import requests
+from ..module_utils.auth import (
+    UNIFI_NETWORK_ENDPOINT_ARGS,
+)
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
-    module_args = dict(
-        unifi_network_url=dict(type='str', required=True, aliases=['url'], fallback=(env_fallback, ['UNIFI_NETWORK_URL', 'UNIFI_NETWORK_API'])),
-        unifi_network_api_key=dict(type='str', required=True, no_log=True, aliases=['api_key'], fallback=(env_fallback, ['UNIFI_NETWORK_API_KEY'])),
-        unifi_network_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify'], fallback=(env_fallback, ['UNIFI_NETWORK_SKIP_TLS_VERIFY'])),
-    )
+    module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
 
     # seed the result dict in the object
     # we primarily care about changed and state

@@ -1,0 +1,267 @@
+---
+- name: Test the functionality of the powerdns_admin collection
+  hosts: localhost
+  gather_facts: false
+
+  module_defaults:
+    group/kenmoini.unifi_network.fullset:
+      unifi_network_skip_tls_verify: true
+
+  tasks:
+
+    - name: Get application info from Unifi Network
+      kenmoini.unifi_network.application_info:
+      register: result
+
+    - name: Show application info
+      debug:
+        var: result.application_info
+
+    - name: Get site info from Unifi Network
+      kenmoini.unifi_network.site_info:
+      register: site_result
+
+    - name: Show site info
+      debug:
+        var: site_result
+
+    - name: Get adopted devices info from Unifi Network
+      kenmoini.unifi_network.adopted_devices_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: adopted_devices_result
+
+    - name: Show adopted devices info
+      debug:
+        var: adopted_devices_result
+
+    - name: Get specific device info from Unifi Network
+      kenmoini.unifi_network.device_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_device_id: "{{ adopted_devices_result.adopted_devices_info.data[0].id }}"
+      register: device_info_result
+
+    - name: Show specific device info
+      debug:
+        var: device_info_result.device_info
+
+    - name: Get specific device statistics from Unifi Network
+      kenmoini.unifi_network.device_statistics:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_device_id: "{{ adopted_devices_result.adopted_devices_info.data[0].id }}"
+      register: device_statistics_result
+
+    - name: Show specific device statistics
+      debug:
+        var: device_statistics_result.device_statistics
+
+    - name: Get pending devices info from Unifi Network
+      kenmoini.unifi_network.pending_devices:
+      register: pending_devices_result
+
+    - name: Show pending devices info
+      debug:
+        var: pending_devices_result
+
+    - name: Get clients info from Unifi Network
+      kenmoini.unifi_network.clients_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: clients_info_result
+
+    - name: Show clients info
+      debug:
+        var: clients_info_result.clients_info
+
+    - name: Get specific client info from Unifi Network
+      kenmoini.unifi_network.client_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_client_id: "{{ clients_info_result.clients_info.data[0].id }}"
+      register: client_info_result
+
+    - name: Show specific client info
+      debug:
+        var: client_info_result.client_info
+
+    - name: Get networks info from Unifi Network
+      kenmoini.unifi_network.networks_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: networks_info_result
+
+    - name: Show networks info
+      debug:
+        var: networks_info_result
+
+    - name: Get specific network info from Unifi Network
+      kenmoini.unifi_network.network_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_network_id: "{{ networks_info_result.networks_info.data[0].id }}"
+      register: network_info_result
+
+    - name: Show specific network info
+      debug:
+        var: network_info_result.network_info
+
+    - name: Get specific network references from Unifi Network
+      kenmoini.unifi_network.network_references:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_network_id: "{{ networks_info_result.networks_info.data[0].id }}"
+      register: network_references_result
+
+    - name: Show specific network references
+      debug:
+        var: network_references_result.network_references
+
+    - name: Get wifi broadcasts info from Unifi Network
+      kenmoini.unifi_network.wifi_broadcasts_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: wifi_broadcasts_info_result
+
+    - name: Show wifi broadcasts info
+      debug:
+        var: wifi_broadcasts_info_result
+
+    - name: Get specific wifi broadcast info from Unifi Network
+      kenmoini.unifi_network.wifi_broadcast_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_wifi_broadcast_id: "{{ wifi_broadcasts_info_result.wifi_broadcasts_info.data[0].id }}"
+      register: wifi_broadcast_info_result
+
+    - name: Show specific wifi broadcast info
+      debug:
+        var: wifi_broadcast_info_result
+
+    - name: Get firewall zones info from Unifi Network
+      kenmoini.unifi_network.firewall_zones_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: firewall_zones_info_result
+
+    - name: Show firewall zones info
+      debug:
+        var: firewall_zones_info_result
+
+    - name: Get specific firewall zone info from Unifi Network
+      kenmoini.unifi_network.firewall_zone_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_firewall_zone_id: "{{ firewall_zones_info_result.firewall_zones_info.data[0].id }}"
+      register: firewall_zone_info_result
+
+    - name: Show specific firewall zone info
+      debug:
+        var: firewall_zone_info_result.firewall_zone_info
+
+    - name: Get ACL rules info from Unifi Network
+      kenmoini.unifi_network.acl_rules_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: acl_rules_info_result
+
+    - name: Show ACL rules info
+      debug:
+        var: acl_rules_info_result
+
+    # - name: Get specific ACL rule info from Unifi Network
+    #   kenmoini.unifi_network.acl_rule_info:
+    #     unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+    #     unifi_network_acl_rule_id: "{{ acl_rules_info_result.acl_rules_info.data[0].id }}"
+    #     unifi_network_skip_tls_verify: true
+    #   register: acl_rule_info_result
+
+    # - name: Show specific ACL rule info
+    #   debug:
+    #     var: acl_rule_info_result.acl_rule_info
+
+    - name: Get WAN interfaces info from Unifi Network
+      kenmoini.unifi_network.wan_interfaces_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: wan_interfaces_info_result
+
+    - name: Show WAN interfaces info
+      debug:
+        var: wan_interfaces_info_result
+
+    - name: Get site-to-site tunnels info from Unifi Network
+      kenmoini.unifi_network.site_to_site_tunnels_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: site_to_site_tunnels_info_result
+
+    - name: Show site-to-site tunnels info
+      debug:
+        var: site_to_site_tunnels_info_result
+
+    - name: Get VPN servers info from Unifi Network
+      kenmoini.unifi_network.vpn_servers_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: vpn_servers_info_result
+
+    - name: Show VPN servers info
+      debug:
+        var: vpn_servers_info_result
+
+    - name: Get device tags info from Unifi Network
+      kenmoini.unifi_network.device_tags_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: device_tags_info_result
+
+    - name: Show device tags info
+      debug:
+        var: device_tags_info_result
+
+    - name: Get DPI categories info from Unifi Network
+      kenmoini.unifi_network.dpi_categories_info:
+      register: dpi_categories_info_result
+
+    - name: Show DPI categories info
+      debug:
+        var: dpi_categories_info_result
+
+    - name: Get DPI applications info from Unifi Network
+      kenmoini.unifi_network.dpi_applications_info:
+      register: dpi_applications_info_result
+
+    - name: Show DPI applications info
+      debug:
+        var: dpi_applications_info_result
+
+    - name: Get Countries info from Unifi Network
+      kenmoini.unifi_network.countries_info:
+      register: countries_info_result
+
+    - name: Show Countries info
+      debug:
+        var: countries_info_result
+
+    - name: Get Hotspot Vouchers info from Unifi Network
+      kenmoini.unifi_network.hotspot_vouchers_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: hotspot_vouchers_info_result
+
+    - name: Show Hotspot Vouchers info
+      debug:
+        var: hotspot_vouchers_info_result
+
+    - name: Get Hotspot Voucher info from Unifi Network
+      kenmoini.unifi_network.hotspot_voucher_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_hotspot_voucher_id: "{{ hotspot_vouchers_info_result.hotspot_vouchers_info.data[0].id }}"
+      register: hotspot_voucher_info_result
+
+    - name: Show Hotspot Voucher info
+      debug:
+        var: hotspot_voucher_info_result
+
+    - name: Get Traffic Matching List info from Unifi Network
+      kenmoini.unifi_network.traffic_matching_lists_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+      register: traffic_matching_lists_info_result
+
+    - name: Show Traffic Matching List info
+      debug:
+        var: traffic_matching_lists_info_result
+
+    - name: Get specific Traffic Matching List info from Unifi Network
+      kenmoini.unifi_network.traffic_matching_list_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        unifi_network_traffic_matching_list_id: "{{ traffic_matching_lists_info_result.traffic_matching_lists_info.data[0].id }}"
+      register: traffic_matching_list_info_result
+
+    - name: Show specific Traffic Matching List info
+      debug:
+        var: traffic_matching_list_info_result

@@ -54,21 +54,23 @@ acl_rule_info:
     returned: always
 '''
 
+import requests, copy
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.parameters import env_fallback
 from ..module_utils.check_response_errors import check_response_errors
-import requests
+from ..module_utils.auth import (
+    UNIFI_NETWORK_ENDPOINT_ARGS,
+)
+from ..module_utils.args import (
+    SITE_ID_ARG_SPEC,
+    ACL_RULE_ID_ARG_SPEC,
+)
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
-    module_args = dict(
-        unifi_network_url=dict(type='str', required=True, aliases=['url'], fallback=(env_fallback, ['UNIFI_NETWORK_URL', 'UNIFI_NETWORK_API'])),
-        unifi_network_api_key=dict(type='str', required=True, no_log=True, aliases=['api_key'], fallback=(env_fallback, ['UNIFI_NETWORK_API_KEY'])),
-        unifi_network_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify'], fallback=(env_fallback, ['UNIFI_NETWORK_SKIP_TLS_VERIFY'])),
-        unifi_network_site_id=dict(type='str', required=True, aliases=['site_id', 'site_uuid', 'site', 'unifi_network_site_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_SITE_ID', 'UNIFI_NETWORK_SITE_UUID'])),
-        unifi_network_acl_rule_id=dict(type='str', required=True, aliases=['acl_rule_uuid', 'acl_rule_id', 'rule', 'rule_id', 'zone_uuid', 'unifi_network_acl_rule_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_ACL_RULE_ID', 'UNIFI_NETWORK_ACL_RULE_UUID'])),
-    )
-
+    module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
+    module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
+    module_args.update(copy.deepcopy(ACL_RULE_ID_ARG_SPEC))
+    
     # seed the result dict in the object
     # we primarily care about changed and state
     # changed is if this module effectively modified the target
