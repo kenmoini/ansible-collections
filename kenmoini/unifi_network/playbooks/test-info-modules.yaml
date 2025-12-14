@@ -81,9 +81,13 @@
       debug:
         var: client_info_result.client_info
 
-    - name: Get networks info from Unifi Network
+    - name: Get networks info from Unifi Network with a specific Name
       kenmoini.unifi_network.networks_info:
         unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        filter:
+          property: "name"
+          function: "eq"
+          value: "Default"
       register: networks_info_result
 
     - name: Show networks info

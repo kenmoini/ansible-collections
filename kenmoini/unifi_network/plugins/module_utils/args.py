@@ -35,3 +35,14 @@ TRAFFIC_MATCHING_LIST_ID_ARG_SPEC = dict(
 WIFI_BROADCAST_ID_ARG_SPEC = dict(
     unifi_network_wifi_broadcast_id=dict(type='str', required=True, aliases=['wifi_broadcast_uuid', 'wifi_broadcast_id', 'unifi_network_wifi_broadcast_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_WIFI_BROADCAST_ID', 'UNIFI_NETWORK_WIFI_BROADCASTUU_ID'])),
 )
+
+FILTERS_ARG_SPEC = dict(
+    unifi_network_filters=dict(type='dict', required=False, aliases=['filters', 'filter'],
+        options=dict(
+          property=dict(type='str', required=True),
+          function=dict(type='str', required=True, choices=['isNull', 'isNotNull', 'eq', 'ne', 'gt', 'ge', 'lt', 'le', 'like', 'in', 'notIn', 'isEmpty', 'contains', 'containsAny', 'containsAll', 'containsExactly']),
+          value=dict(type='raw', required=False, default=None),
+        ),
+    ),
+    unifi_network_filters_raw=dict(type='str', required=False, aliases=['filters_raw', 'filter_raw'])
+)

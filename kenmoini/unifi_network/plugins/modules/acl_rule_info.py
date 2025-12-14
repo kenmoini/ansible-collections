@@ -57,9 +57,7 @@ acl_rule_info:
 import requests, copy
 from ansible.module_utils.basic import AnsibleModule
 from ..module_utils.check_response_errors import check_response_errors
-from ..module_utils.auth import (
-    UNIFI_NETWORK_ENDPOINT_ARGS,
-)
+from ..module_utils.auth import UNIFI_NETWORK_ENDPOINT_ARGS
 from ..module_utils.args import (
     SITE_ID_ARG_SPEC,
     ACL_RULE_ID_ARG_SPEC,

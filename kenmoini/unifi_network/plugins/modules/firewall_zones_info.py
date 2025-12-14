@@ -20,6 +20,7 @@ description:
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
   - kenmoini.unifi_network.site_id
+  - kenmoini.unifi_network.filters
 
 author:
     - Ken Moini (@kenmoini)
@@ -45,17 +46,18 @@ firewall_zones_info:
 import requests, copy
 from ansible.module_utils.basic import AnsibleModule
 from ..module_utils.check_response_errors import check_response_errors
-from ..module_utils.auth import (
-    UNIFI_NETWORK_ENDPOINT_ARGS,
-)
+from ..module_utils.filter_requests import filter_requests
+from ..module_utils.auth import UNIFI_NETWORK_ENDPOINT_ARGS
 from ..module_utils.args import (
     SITE_ID_ARG_SPEC,
+    FILTERS_ARG_SPEC,
 )
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
     module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
+    module_args.update(copy.deepcopy(FILTERS_ARG_SPEC))
 
     # seed the result dict in the object
     # we primarily care about changed and state
@@ -84,6 +86,9 @@ def run_module():
     apiBaseURL = "/proxy/network/integrations"
 
     targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/firewall/zones'
+
+    # Apply any filters to the request URL
+    targetURL = filter_requests(module, targetURL, result)
 
     # Perform the API request to get the Firewall Zones Info
     response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
