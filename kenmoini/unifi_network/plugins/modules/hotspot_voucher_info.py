@@ -17,42 +17,11 @@ version_added: "1.0.0"
 description:
     - Retrieves information about a specific Hotspot Voucher in this Unifi Network Application.
 
+extends_documentation_fragment:
+  - kenmoini.unifi_network.common
+  - kenmoini.unifi_network.site_id
+
 options:
-  unifi_network_url:
-    description:
-      - This is the URL of your Unifi Network endpoint
-    required: true
-    aliases: ['unifi_network_api', 'url']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_URL
-      - name: UNIFI_NETWORK_API
-  unifi_network_api_key:
-    description:
-      - This is the API Key for your Unifi Network endpoint
-    required: true
-    aliases: ['api_key']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_API_KEY
-  unifi_network_skip_tls_verify:
-    description:
-      - Whether or not to skip TLS verification
-    required: false
-    default: false
-    aliases: ['skip_tls_verify']
-    type: bool
-    env:
-      - name: UNIFI_NETWORK_SKIP_TLS_VERIFY
-  unifi_network_site_id:
-    description:
-      - The Site UUID to query for Hotspot Vouchers.
-    required: true
-    aliases: ['site_id', 'site_uuid', 'site', 'unifi_network_site_uuid']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_SITE_ID
-      - name: UNIFI_NETWORK_SITE_UUID
   unifi_network_hotspot_voucher_id:
     description:
       - The Hotspot Voucher UUID to query for information.

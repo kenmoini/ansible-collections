@@ -19,17 +19,9 @@ description:
 
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
+  - kenmoini.unifi_network.site_id
 
 options:
-  unifi_network_site_id:
-    description:
-      - The Site UUID to query for ACL Rules.
-    required: true
-    aliases: ['site_id', 'site_uuid', 'site', 'unifi_network_site_uuid']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_SITE_ID
-      - name: UNIFI_NETWORK_SITE_UUID
   unifi_network_acl_rule_id:
     description:
       - The ACL Rule UUID to query for information.
