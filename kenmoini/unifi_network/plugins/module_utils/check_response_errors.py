@@ -1,7 +1,5 @@
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.parameters import env_fallback
-import requests
 
 def check_response_errors(module, response, result, context=''):
     if response.status_code != 200:
