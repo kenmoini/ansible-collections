@@ -7,7 +7,7 @@ on:
     # tags:
     #   - v*
     paths:
-      - kenmoini/unifi_network/galaxy.yml
+      - kenmoini/unifi_network/**
 
   workflow_dispatch:
 
