@@ -1,6 +1,7 @@
 
 from ansible.module_utils.basic import AnsibleModule
 
+# Utility function to check for response errors from Unifi Network API - assuming that they keep using this pattern
 def check_response_errors(module, response, result, context=''):
     if response.status_code != 200:
         json_response = response.json()
