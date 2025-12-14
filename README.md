@@ -9,6 +9,7 @@ This is a set of Ansible Collections that I build and distribute.
 - `kenmoini.phpipam` - Simple modules to use against phpIPAM
 - `kenmoini.redfish` - Ansible Roles to boot systems via Redfish APIs
 - `kenmoini.powerdns_admin` - Some modules to work with the PowerDNS Admin interface [WIP]
+- `kenmoini.unifi_network` - Ansible content to access and manage a Unifi Network Application.
 - `kenmoini.ztp` - Ansible Roles to perform various ZTP functions such as infrastructure creation on vSphere [WIP]
 
 ## Development
