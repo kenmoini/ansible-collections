@@ -77,6 +77,7 @@ clients_info:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.parameters import env_fallback
+from ..module_utils.check_response_errors import check_response_errors
 import requests
 
 def run_module():
@@ -119,7 +120,7 @@ def run_module():
     # Perform the API request to get the Connected Clients Info
     response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
     if response.status_code != 200:
-        module.fail_json(msg='Failed to retrieve Connected Clients Info from Unifi Network', **result)
+        check_response_errors(module, response, result, context=' while retrieving Clients Info')
 
     result['clients_info'] = response.json()
 

@@ -11,11 +11,11 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: firewall_zone_info
-short_description: Returns the details about a specific Firewall Zone from Unifi Network
+module: dpi_categories_info
+short_description: Returns the list of DPI Categories from Unifi Network
 version_added: "1.0.0"
 description:
-    - Retrieves information about a specific Firewall Zone in this Unifi Network Application.
+    - Returns predefined Deep Packet Inspection (DPI) categories used for traffic identification and filtering.
 
 options:
   unifi_network_url:
@@ -44,43 +44,23 @@ options:
     type: bool
     env:
       - name: UNIFI_NETWORK_SKIP_TLS_VERIFY
-  unifi_network_site_id:
-    description:
-      - The Site UUID to query for Firewall Zones.
-    required: true
-    aliases: ['site_id', 'site_uuid', 'site', 'unifi_network_site_uuid']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_SITE_ID
-      - name: UNIFI_NETWORK_SITE_UUID
-  unifi_network_firewall_zone_id:
-    description:
-      - The Firewall Zone UUID to query for information.
-    required: true
-    aliases: ['firewall_zone_uuid', 'firewall_zone_id', 'zone', 'zone_id', 'zone_uuid', 'unifi_network_firewall_zone_uuid']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_FIREWALL_ZONE_ID
-      - name: UNIFI_NETWORK_FIREWALL_ZONE_UUID
 
 author:
     - Ken Moini (@kenmoini)
 '''
 
 EXAMPLES = '''
-# Get the details of a Firewall Zone from the Unifi Network
-- name: Get Firewall Zone Info
-  kenmoini.unifi_network.firewall_zone_info:
+# Get the List of Deep Packet Inspection (DPI) categories on the Unifi Network for a Site
+- name: Get Deep Packet Inspection (DPI) categories
+  kenmoini.unifi_network.dpi_categories_info:
     unifi_network_url: https://unifi.example.com
     unifi_network_api_key: 1234567890
-    unifi_network_site_id: 88f7af54-1234-5678-9101-abcdefghijklm
-    unifi_network_firewall_zone_id: 1234abcd-5678-efgh-9101-ijklmnopqrst
-  register: r_firewall_zone_info
+  register: r_dpi_categories_info
 '''
 
 RETURN = '''
-firewall_zone_info:
-    description: The data returned about the Firewall Zone at the Site managed by this Unifi Network Application
+dpi_categories_info:
+    description: The data returned about the list of Deep Packet Inspection (DPI) categories at the Site managed by this Unifi Network Application
     type: object
     returned: always
 '''
@@ -96,8 +76,6 @@ def run_module():
         unifi_network_url=dict(type='str', required=True, aliases=['url'], fallback=(env_fallback, ['UNIFI_NETWORK_URL', 'UNIFI_NETWORK_API'])),
         unifi_network_api_key=dict(type='str', required=True, no_log=True, aliases=['api_key'], fallback=(env_fallback, ['UNIFI_NETWORK_API_KEY'])),
         unifi_network_skip_tls_verify=dict(type='bool', required=False, default=False, aliases=['skip_tls_verify'], fallback=(env_fallback, ['UNIFI_NETWORK_SKIP_TLS_VERIFY'])),
-        unifi_network_site_id=dict(type='str', required=True, aliases=['site_id', 'site_uuid', 'site', 'unifi_network_site_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_SITE_ID', 'UNIFI_NETWORK_SITE_UUID'])),
-        unifi_network_firewall_zone_id=dict(type='str', required=True, aliases=['firewall_zone_uuid', 'firewall_zone_id', 'zone', 'zone_id', 'zone_uuid', 'unifi_network_firewall_zone_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_FIREWALL_ZONE_ID', 'UNIFI_NETWORK_FIREWALL_ZONE_UUID'])),
     )
 
     # seed the result dict in the object
@@ -107,7 +85,7 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        firewall_zone_info={}
+        dpi_categories_info={}
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -126,14 +104,14 @@ def run_module():
     }
     apiBaseURL = "/proxy/network/integrations"
 
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/firewall/zones/' + module.params['unifi_network_firewall_zone_id']
+    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/dpi/categories'
 
-    # Perform the API request to get the Firewall Zone Info
+    # Perform the API request to get the Deep Packet Inspection (DPI) categories Info
     response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
     if response.status_code != 200:
-        check_response_errors(module, response, result, context=' while retrieving a specific Firewall Zone Info')
+        check_response_errors(module, response, result, context=' while retrieving DPI Categories Info')
 
-    result['firewall_zone_info'] = response.json()
+    result['dpi_categories_info'] = response.json()
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
