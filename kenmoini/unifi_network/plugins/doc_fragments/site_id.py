@@ -15,7 +15,7 @@ class ModuleDocFragment(object):
 options:
   unifi_network_site_id:
     description:
-      - The Site UUID to query for networks.
+      - The Site UUID to query for networks  Can also be specified via the environment variables C(UNIFI_NETWORK_SITE_ID) or C(UNIFI_NETWORK_SITE_UUID).
     required: true
     aliases: ['site_id', 'site_uuid', 'site', 'unifi_network_site_uuid']
     type: str

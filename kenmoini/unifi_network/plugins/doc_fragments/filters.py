@@ -16,7 +16,7 @@ options:
   unifi_network_filters:
     description:
       - Query filters to apply to the request.  Find the documentation for filter syntax at Ubiquiti's official API documentation seen in your Unifi Dashboard under a specific Site > Integrations.  Mutually exclusive with unifi_network_filters_raw.
-    required: true
+    required: false
     aliases: ['filters', 'filter']
     type: dict
     options:
