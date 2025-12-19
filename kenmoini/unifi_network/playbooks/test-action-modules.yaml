@@ -1,0 +1,45 @@
+---
+- name: Test the functionality of the powerdns_admin collection
+  hosts: localhost
+  gather_facts: false
+
+  module_defaults:
+    group/kenmoini.unifi_network.fullset:
+      unifi_network_skip_tls_verify: true
+
+  tasks:
+
+    - name: Get site info from Unifi Network
+      kenmoini.unifi_network.site_info:
+      register: site_result
+
+    - name: Show site info
+      debug:
+        var: site_result
+
+    - name: Get device info from Unifi Network for a specific AP
+      kenmoini.unifi_network.adopted_devices_info:
+        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+        filter:
+          property: name
+          function: eq
+          #value: "U7 Pro"
+          value: "USW Pro Max 24 PoE"
+      register: device_result
+
+    - name: Show device info
+      debug:
+        var: device_result
+
+    # - name: Perform a restart action on the specific device
+    #   kenmoini.unifi_network.device_action:
+    #     unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+    #     unifi_network_device_id: "{{ device_result.adopted_devices_info.data[0].id }}"
+    #     device_action: restart
+
+    # - name: Perform a power cycle action on port 1 of the specific device
+    #   kenmoini.unifi_network.port_action:
+    #     unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
+    #     unifi_network_device_id: "{{ device_result.adopted_devices_info.data[0].id }}"
+    #     unifi_network_port_id: 1
+    #     port_action: power_cycle

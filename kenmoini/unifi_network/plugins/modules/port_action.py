@@ -11,37 +11,42 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: device_info
-short_description: Returns the details about a specific Device from Unifi Network
+module: port_action
+short_description: Performs an action on a specific Port on a Device from Unifi Network
 version_added: "1.0.0"
 description:
-    - Retrieves information about a specific Adopted Device managed by this Unifi Network Application.
+    - Perform an action on an specific port of a adopted device.
 
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
   - kenmoini.unifi_network.site_id
   - kenmoini.unifi_network.device_id
+  - kenmoini.unifi_network.port_id
+
+options:
+  port_action:
+    description:
+      - The action to take on the device's port.
+    required: true
+    type: str
+    options:
+      - power_cycle
+    aliases: ['action']
 
 author:
     - Ken Moini (@kenmoini)
 '''
 
 EXAMPLES = '''
-# Get the details of a Device from the Unifi Network
-- name: Get Device Info
-  kenmoini.unifi_network.device_info:
+# Power Cycle a Port on a PoE Device in Unifi Network
+- name: Power Cycle port
+  kenmoini.unifi_network.port_action:
     unifi_network_url: https://unifi.example.com
     unifi_network_api_key: 1234567890
     unifi_network_site_id: 88f7af54-1234-5678-9101-abcdefghijklm
     unifi_network_device_id: 1234abcd-5678-efgh-9101-ijklmnopqrst
-  register: r_device_info
-'''
-
-RETURN = '''
-device_info:
-    description: The data returned about the device at the Site managed by this Unifi Network Application
-    type: object
-    returned: always
+    unifi_network_port_id: 1
+    port_action: power_cyle
 '''
 
 import requests, copy
@@ -53,6 +58,7 @@ from ..module_utils.auth import (
 from ..module_utils.args import (
     SITE_ID_ARG_SPEC,
     DEVICE_ID_ARG_SPEC,
+    PORT_ID_ARG_SPEC,
 )
 
 def run_module():
@@ -60,6 +66,11 @@ def run_module():
     module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
     module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
     module_args.update(copy.deepcopy(DEVICE_ID_ARG_SPEC))
+    module_args.update(copy.deepcopy(PORT_ID_ARG_SPEC))
+    module_args.update(
+            dict(action=dict(type='str', required=True, choices=['power_cycle'], aliases=['port_action']),
+        )
+    )
     
     # seed the result dict in the object
     # we primarily care about changed and state
@@ -68,7 +79,6 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        device_info={}
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -87,14 +97,20 @@ def run_module():
     }
     apiBaseURL = "/proxy/network/integrations"
 
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/devices/' + module.params['unifi_network_device_id']
+    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/devices/' + module.params['unifi_network_device_id'] + '/interfaces/ports/' + str(module.params['unifi_network_port_id']) + '/actions'
+
+    # Assemble the payload for the action
+    payload = {
+        'action': module.params['action'].upper()
+    }
 
     # Perform the API request to get the Adopted Devices Info
-    response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
+    # TODO: Check Mode Enhancement: If this is checkmode, skip the actual POST but query the device list to ensure the device exists
+    response = requests.post(targetURL, headers=headers, json=payload, verify=not module.params['unifi_network_skip_tls_verify'])
     if response.status_code != 200:
         check_response_errors(module, response, result, context=' while retrieving a specific Device Info')
 
-    result['device_info'] = response.json()
+    result['changed'] = True
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results

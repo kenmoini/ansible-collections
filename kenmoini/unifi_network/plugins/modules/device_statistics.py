@@ -20,17 +20,7 @@ description:
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
   - kenmoini.unifi_network.site_id
-
-options:
-  unifi_network_device_id:
-    description:
-      - The Device UUID to query for device information.
-    required: true
-    aliases: ['device_uuid', 'device', 'unifi_network_device_uuid']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_DEVICE_ID
-      - name: UNIFI_NETWORK_DEVICE_UUID
+  - kenmoini.unifi_network.device_id
 
 author:
     - Ken Moini (@kenmoini)

@@ -56,6 +56,7 @@ action_groups:
     - client_info
     - clients_info
     - countries_info
+    - device_action
     - device_info
     - device_statistics
     - device_tags_info
@@ -69,6 +70,7 @@ action_groups:
     - network_references
     - networks_info
     - pending_devices
+    - port_action
     - radius_profiles_info
     - site_info
     - site_to_site_tunnels_info

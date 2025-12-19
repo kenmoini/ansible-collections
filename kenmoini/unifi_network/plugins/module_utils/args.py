@@ -1,9 +1,5 @@
 from ansible.module_utils.common.parameters import env_fallback
 
-SITE_ID_ARG_SPEC = dict(
-    unifi_network_site_id=dict(type='str', required=True, aliases=['site_id', 'site_uuid', 'site', 'unifi_network_site_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_SITE_ID', 'UNIFI_NETWORK_SITE_UUID'])),
-)
-
 ACL_RULE_ID_ARG_SPEC = dict(
     unifi_network_acl_rule_id=dict(type='str', required=True, aliases=['acl_rule_uuid', 'acl_rule_id', 'rule', 'rule_id', 'zone_uuid', 'unifi_network_acl_rule_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_ACL_RULE_ID', 'UNIFI_NETWORK_ACL_RULE_UUID'])),
 )
@@ -26,6 +22,14 @@ HOTSPOT_VOUCHER_ID_ARG_SPEC = dict(
 
 NETWORK_ID_ARG_SPEC = dict(
     unifi_network_network_id=dict(type='str', required=True, aliases=['network_uuid', 'network', 'unifi_network_network_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_NETWORK_ID', 'UNIFI_NETWORK_NETWORK_UUID'])),
+)
+
+PORT_ID_ARG_SPEC = dict(
+    unifi_network_port_id=dict(type='int', required=True, aliases=['port', 'port_id', 'unifi_network_device_port_id'], fallback=(env_fallback, ['UNIFI_NETWORK_PORT_ID', 'UNIFI_NETWORK_DEVICE_PORT_ID'])),
+)
+
+SITE_ID_ARG_SPEC = dict(
+    unifi_network_site_id=dict(type='str', required=True, aliases=['site_id', 'site_uuid', 'site', 'unifi_network_site_uuid'], fallback=(env_fallback, ['UNIFI_NETWORK_SITE_ID', 'UNIFI_NETWORK_SITE_UUID'])),
 )
 
 TRAFFIC_MATCHING_LIST_ID_ARG_SPEC = dict(

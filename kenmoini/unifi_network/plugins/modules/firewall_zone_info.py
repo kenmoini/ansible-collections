@@ -20,17 +20,7 @@ description:
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
   - kenmoini.unifi_network.site_id
-
-options:
-  unifi_network_firewall_zone_id:
-    description:
-      - The Firewall Zone UUID to query for information.
-    required: true
-    aliases: ['firewall_zone_uuid', 'firewall_zone_id', 'zone', 'zone_id', 'zone_uuid', 'unifi_network_firewall_zone_uuid']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_FIREWALL_ZONE_ID
-      - name: UNIFI_NETWORK_FIREWALL_ZONE_UUID
+  - kenmoini.unifi_network.firewall_zone_id
 
 author:
     - Ken Moini (@kenmoini)
