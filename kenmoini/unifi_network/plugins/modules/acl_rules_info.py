@@ -19,6 +19,8 @@ description:
 
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
+  - kenmoini.unifi_network.query_limit
+  - kenmoini.unifi_network.query_offset
   - kenmoini.unifi_network.site_id
   - kenmoini.unifi_network.filters
 
@@ -45,6 +47,8 @@ acl_rules_info:
 
 import requests, copy
 from ansible.module_utils.basic import AnsibleModule
+from ..module_utils.query_limit import UNIFI_NETWORK_QUERY_LIMIT
+from ..module_utils.query_offset import UNIFI_NETWORK_QUERY_OFFSET
 from ..module_utils.check_response_errors import check_response_errors
 from ..module_utils.filter_requests import filter_requests
 from ..module_utils.auth import UNIFI_NETWORK_ENDPOINT_ARGS
@@ -56,6 +60,8 @@ from ..module_utils.args import (
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
+    module_args.update(copy.deepcopy(UNIFI_NETWORK_QUERY_LIMIT))
+    module_args.update(copy.deepcopy(UNIFI_NETWORK_QUERY_OFFSET))
     module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
     module_args.update(copy.deepcopy(FILTERS_ARG_SPEC))
 
@@ -85,7 +91,14 @@ def run_module():
     }
     apiBaseURL = "/proxy/network/integrations"
 
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/acl-rules'
+    query_params = {
+        "limit": str(module.params['query_limit']),
+        "offset": str(module.params['query_offset'])
+    }
+
+    query_params_str = '&'.join([f"{key}={value}" for key, value in query_params.items()])
+
+    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/acl-rules?' + query_params_str
 
     # Apply any filters to the request URL
     targetURL = filter_requests(module, targetURL, result)

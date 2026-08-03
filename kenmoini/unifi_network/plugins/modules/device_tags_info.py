@@ -19,6 +19,8 @@ description:
 
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
+  - kenmoini.unifi_network.query_limit
+  - kenmoini.unifi_network.query_offset
   - kenmoini.unifi_network.site_id
 
 author:
@@ -44,6 +46,8 @@ device_tags_info:
 
 import requests, copy
 from ansible.module_utils.basic import AnsibleModule
+from ..module_utils.query_limit import UNIFI_NETWORK_QUERY_LIMIT
+from ..module_utils.query_offset import UNIFI_NETWORK_QUERY_OFFSET
 from ..module_utils.check_response_errors import check_response_errors
 from ..module_utils.auth import (
     UNIFI_NETWORK_ENDPOINT_ARGS,
@@ -55,6 +59,8 @@ from ..module_utils.args import (
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
+    module_args.update(copy.deepcopy(UNIFI_NETWORK_QUERY_LIMIT))
+    module_args.update(copy.deepcopy(UNIFI_NETWORK_QUERY_OFFSET))
     module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
 
     # seed the result dict in the object
@@ -82,8 +88,14 @@ def run_module():
         'X-API-Key': module.params['unifi_network_api_key']
     }
     apiBaseURL = "/proxy/network/integrations"
+    query_params = {
+        "limit": str(module.params['query_limit']),
+        "offset": str(module.params['query_offset'])
+    }
 
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/device-tags'
+    query_params_str = '&'.join([f"{key}={value}" for key, value in query_params.items()])
+
+    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/device-tags?' + query_params_str
 
     # Perform the API request to get the Device Tags Info
     response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])

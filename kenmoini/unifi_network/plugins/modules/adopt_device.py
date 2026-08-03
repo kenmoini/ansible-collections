@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright: (c) 2025, Ken Moini <ken@kenmoini.com>
+# Copyright: (c) 2026, Ken Moini <ken@kenmoini.com>
 # MIT License
 
 ANSIBLE_METADATA = {
@@ -11,60 +11,76 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: adopted_devices_info
-short_description: Returns the list of Adopted Devices from Unifi Network
+module: adopt_device
+short_description: Adopts a Device into a Site's Unifi Network
 version_added: "1.0.0"
 description:
-    - Retrieves information about the list of Adopted Devices managed by this Unifi Network Application.
+    - Adopts a Device into a Site's Unifi Network.
 
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
-  - kenmoini.unifi_network.query_limit
-  - kenmoini.unifi_network.query_offset
   - kenmoini.unifi_network.site_id
-  - kenmoini.unifi_network.filters
+
+options:
+  device_macAddress:
+    description:
+      - The Device MAC Address to adopt into the Unifi Network.
+    required: true
+    aliases: ['mac', 'macAddress', 'unifi_network_device_mac', 'unifi_network_device_mac_address']
+    type: str
+    env:
+      - name: UNIFI_NETWORK_DEVICE_MAC_ADDRESS
+  ignoreDeviceLimit:
+    description:
+      - Whether to ignore the device limit when adopting the device.
+    required: false
+    type: bool
+    default: true
+    env:
+      - name: UNIFI_NETWORK_IGNORE_DEVICE_LIMIT
 
 author:
     - Ken Moini (@kenmoini)
 '''
 
 EXAMPLES = '''
-# Get the List of Adopted Devices from the Unifi Network for a Site
-- name: Get Adopted Devices at a Site from Unifi Network
-  kenmoini.unifi_network.adopted_devices_info:
+# Get the List of Pending Devices from the Unifi Network for a Site
+- name: Adopt a Device into the Unifi Network
+  kenmoini.unifi_network.adopt_device:
     unifi_network_url: https://unifi.example.com
     unifi_network_api_key: 1234567890
     unifi_network_site_id: 88f7af54-1234-5678-9101-abcdefghijklm
-  register: r_adopted_devices_info
+    device_macAddress: "00:11:22:33:44:55"
+  register: r_adopted_device_info
 '''
 
 RETURN = '''
-adopted_devices_info:
-    description: The data returned about the list of adopted devices at the Site managed by this Unifi Network Application
+adopted_device_info:
+    description: The data returned about the adopted device at the Site managed by this Unifi Network Application
     type: object
     returned: always
 '''
 
 import requests, copy
 from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.query_limit import UNIFI_NETWORK_QUERY_LIMIT
-from ..module_utils.query_offset import UNIFI_NETWORK_QUERY_OFFSET
 from ..module_utils.check_response_errors import check_response_errors
-from ..module_utils.filter_requests import filter_requests
-from ..module_utils.auth import UNIFI_NETWORK_ENDPOINT_ARGS
+from ..module_utils.auth import (
+    UNIFI_NETWORK_ENDPOINT_ARGS,
+)
 from ..module_utils.args import (
     SITE_ID_ARG_SPEC,
-    FILTERS_ARG_SPEC,
 )
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
-    module_args.update(copy.deepcopy(UNIFI_NETWORK_QUERY_LIMIT))
-    module_args.update(copy.deepcopy(UNIFI_NETWORK_QUERY_OFFSET))
     module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
-    module_args.update(copy.deepcopy(FILTERS_ARG_SPEC))
-
+    module_args.update(
+            dict(device_macAddress=dict(type='str', required=True, aliases=['mac', 'macAddress', 'unifi_network_device_mac', 'unifi_network_device_mac_address']),
+                  ignoreDeviceLimit=dict(type='bool', required=False, default=True),
+        )
+    )
+    
     # seed the result dict in the object
     # we primarily care about changed and state
     # changed is if this module effectively modified the target
@@ -72,7 +88,6 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        adopted_devices_info={}
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -91,24 +106,22 @@ def run_module():
     }
     apiBaseURL = "/proxy/network/integrations"
 
-    query_params = {
-        "limit": str(module.params['query_limit']),
-        "offset": str(module.params['query_offset'])
+    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/devices'
+
+    # Assemble the payload for the action
+    payload = {
+        'macAddress': module.params['device_macAddress'],
+        'ignoreDeviceLimit': module.params['ignoreDeviceLimit']
     }
 
-    query_params_str = '&'.join([f"{key}={value}" for key, value in query_params.items()])
-
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/devices?' + query_params_str
-
-    # Apply any filters to the request URL
-    targetURL = filter_requests(module, targetURL, result)
-
     # Perform the API request to get the Adopted Devices Info
-    response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
+    # TODO: Check Mode Enhancement: If this is checkmode, skip the actual POST but query the pending adoption device list to ensure the device exists
+    response = requests.post(targetURL, headers=headers, json=payload, verify=not module.params['unifi_network_skip_tls_verify'])
     if response.status_code != 200:
-        check_response_errors(module, response, result, context=' while retrieving Adopted Devices Info')
+        check_response_errors(module, response, result, context=' while retrieving a specific Device Info')
 
-    result['adopted_devices_info'] = response.json()
+    result['changed'] = True
+    result['adopted_device_info'] = response.json()
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results

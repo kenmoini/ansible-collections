@@ -19,6 +19,8 @@ description:
 
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
+  - kenmoini.unifi_network.query_limit
+  - kenmoini.unifi_network.query_offset
 
 author:
     - Ken Moini (@kenmoini)
@@ -42,6 +44,8 @@ site_info:
 
 import requests, copy
 from ansible.module_utils.basic import AnsibleModule
+from ..module_utils.query_limit import UNIFI_NETWORK_QUERY_LIMIT
+from ..module_utils.query_offset import UNIFI_NETWORK_QUERY_OFFSET
 from ..module_utils.check_response_errors import check_response_errors
 from ..module_utils.auth import (
     UNIFI_NETWORK_ENDPOINT_ARGS,
@@ -50,6 +54,8 @@ from ..module_utils.auth import (
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
+    module_args.update(copy.deepcopy(UNIFI_NETWORK_QUERY_LIMIT))
+    module_args.update(copy.deepcopy(UNIFI_NETWORK_QUERY_OFFSET))
 
     # seed the result dict in the object
     # we primarily care about changed and state
@@ -77,7 +83,14 @@ def run_module():
     }
     apiBaseURL = "/proxy/network/integrations"
 
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites'
+    query_params = {
+        "limit": str(module.params['query_limit']),
+        "offset": str(module.params['query_offset'])
+    }
+
+    query_params_str = '&'.join([f"{key}={value}" for key, value in query_params.items()])
+
+    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites?' + query_params_str
 
     # Perform the API request to get the Site Info
     response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
