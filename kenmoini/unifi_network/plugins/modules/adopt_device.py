@@ -76,7 +76,7 @@ def run_module():
     module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
     module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
     module_args.update(
-            dict(device_macAddress=dict(type='str', required=True, aliases=['mac', 'macAddress', 'unifi_network_device_mac', 'unifi_network_device_mac_address']),
+            dict(device_macAddress=dict(type='str', required=True, aliases=['deviceMacAddress', 'deviceMACAddress', 'mac', 'macAddress', 'unifi_network_device_mac', 'unifi_network_device_mac_address']),
                   ignoreDeviceLimit=dict(type='bool', required=False, default=True),
         )
     )
@@ -96,7 +96,7 @@ def run_module():
     # supports check mode
     module = AnsibleModule(
         argument_spec=module_args,
-        supports_check_mode=False
+        supports_check_mode=True
     )
 
     # Create the headers for the API request
@@ -105,6 +105,29 @@ def run_module():
         'X-API-Key': module.params['unifi_network_api_key']
     }
     apiBaseURL = "/proxy/network/integrations"
+
+    if module.check_mode:
+        # In check mode, we will check if the device is already adopted or pending adoption
+        # If the device is pending adoption, we will return changed=True
+        # If the device is not found, we will return error
+        # We will not perform the actual adoption in check mode
+        checkURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/pending-devices?filter=and(macAddress.eq(\'' + module.params['device_macAddress'] + '\'),state.eq(\'PENDING_ADOPTION\'))'
+        checkResponse = requests.get(checkURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
+        if checkResponse.status_code != 200:
+            check_response_errors(module, checkResponse, result, context=' while retrieving a specific Pending Device Info')
+        else:
+            if len(checkResponse.json().get('data', [])) > 0:
+                checkData = checkResponse.json().get('data', [])
+                if module.params['unifi_network_site_id'] in checkData[0].get('adoptionTargetSiteIds', []):
+                    result['changed'] = True
+                    result['pending_device_info'] = checkResponse.json()
+                else:
+                    result['changed'] = False
+                    module.fail_json(msg='Site ID not in allowed list of records', **result)
+            else:
+                result['changed'] = False
+                module.fail_json(msg='Device not found in pending adoption list', **result)
+        module.exit_json(**result)
 
     targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/devices'
 
@@ -115,7 +138,6 @@ def run_module():
     }
 
     # Perform the API request to get the Adopted Devices Info
-    # TODO: Check Mode Enhancement: If this is checkmode, skip the actual POST but query the pending adoption device list to ensure the device exists
     response = requests.post(targetURL, headers=headers, json=payload, verify=not module.params['unifi_network_skip_tls_verify'])
     if response.status_code != 200:
         check_response_errors(module, response, result, context=' while retrieving a specific Device Info')

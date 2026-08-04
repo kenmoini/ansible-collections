@@ -51,6 +51,7 @@ action_groups:
   fullset:
     - acl_rules_info
     - acl_rule_info
+    - adopt_device
     - adopted_devices_info
     - application_info
     - client_info
