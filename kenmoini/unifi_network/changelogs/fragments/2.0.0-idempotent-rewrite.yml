@@ -1,0 +1,36 @@
+---
+release_summary: |
+  Complete coverage of the UniFi Network Integration API v11.0.97 with idempotent, check/diff-mode aware state modules,
+  consolidated ``_info`` modules with automatic pagination and typed filters, and a shared, dependency-free HTTP client.
+major_changes:
+  - New idempotent state modules - ``network`` (rewritten), ``firewall_zone``, ``firewall_policy``, ``firewall_policy_ordering``,
+    ``acl_rule``, ``acl_rule_ordering``, ``dns_policy``, ``traffic_matching_list``, ``wifi_broadcast``, ``hotspot_voucher``,
+    ``device`` (adoption), and ``client_guest_access``. They look objects up by name (or ``id``), only write when something differs,
+    support check mode and ``--diff``, and accept names or UUIDs for referenced objects.
+  - New info modules - ``firewall_policy_info``, ``dns_policy_info``, ``lag_info``, ``mc_lag_domain_info``, ``switch_stack_info``,
+    ``acl_rule_ordering_info`` and ``firewall_policy_ordering_info``.
+  - The site option (``unifi_network_site_id``) now also accepts a site name or internal reference such as ``default``.
+breaking_changes:
+  - Info modules were consolidated to one ``<resource>_info`` module per resource with optional ``id``, ``name`` and filters. They now
+    return a plain list (for example ``networks``) instead of the raw API page (``networks_info.data``). Update ``register``ed
+    variable access accordingly.
+  - Renamed modules (old names redirect with a deprecation warning until 3.0.0) - ``networks_info`` to ``network_info``,
+    ``adopted_devices_info`` to ``device_info``, ``clients_info`` to ``client_info``, ``countries_info`` to ``country_info``,
+    ``pending_devices`` to ``pending_device_info``, ``device_statistics`` to ``device_statistics_info``,
+    ``network_references`` to ``network_references_info``, and every other plural ``*_info`` module to its singular name.
+  - The ``device_statistics_info``, ``network_references_info``, ``device_action`` and ``port_action`` modules take the device or network
+    as ``device`` / ``network`` (name, MAC or UUID); the old option names remain as aliases.
+  - Resource ID environment variables such as ``UNIFI_NETWORK_NETWORK_ID`` are no longer read.
+  - The ``requests`` Python library is no longer used; the modules use Ansible's built-in URL handling.
+minor_changes:
+  - All ``_info`` modules fetch every page of results (the API returns 25 items per page by default).
+  - Filters accept a single condition or a list combined with ``filters_match`` (all/any), keep value types (booleans and numbers are
+    no longer quoted), support multi-value functions such as ``in`` and value-less functions such as ``isNull``, and are URL-encoded.
+  - New connection options ``unifi_network_api_path`` (for example to use the UniFi cloud connector) and ``unifi_network_timeout``.
+  - API errors now include the HTTP status, the API error code and message, the request ID, and a hint.
+bugfixes:
+  - Info modules now run in check mode instead of being skipped.
+  - Requests that return HTTP 201 (resource created) are no longer treated as errors.
+  - Fixed copy-paste aliases on several ID options (for example ``zone`` on the traffic matching list ID) and a typo in the WiFi broadcast
+    environment variable name.
+  - Fixed invalid documentation for ``device_action`` and ``port_action``.

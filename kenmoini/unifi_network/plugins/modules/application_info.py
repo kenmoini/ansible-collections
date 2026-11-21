@@ -1,97 +1,56 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2025, Ken Moini <ken@kenmoini.com>
 # MIT License
 
-ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+from __future__ import absolute_import, division, print_function
 
-DOCUMENTATION = '''
+__metaclass__ = type
+
+DOCUMENTATION = r'''
 ---
 module: application_info
-short_description: Returns the Unifi Network Application Information
+short_description: Get UniFi Network application information
 version_added: "1.0.0"
 description:
-    - Retrieves information about the Unifi Network Application such as version.
-
+  - Returns general details about the UniFi Network application, such as its version.
+  - Useful to validate connectivity and credentials before running other modules.
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
-
+  - kenmoini.unifi_network.attributes
+  - kenmoini.unifi_network.attributes.info
 author:
-    - Ken Moini (@kenmoini)
+  - Ken Moini (@kenmoini)
 '''
 
-EXAMPLES = '''
-# Get the Application Info from Unifi Network
-- name: Get Unifi Network Application Info
+EXAMPLES = r'''
+- name: Get the UniFi Network application version
   kenmoini.unifi_network.application_info:
-    unifi_network_url: https://unifi.example.com
-    unifi_network_api_key: 1234567890
-  register: r_app_info
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+  register: r_app
+
+- name: Show the version
+  ansible.builtin.debug:
+    msg: "{{ r_app.application.applicationVersion }}"
 '''
 
-RETURN = '''
-application_info:
-    description: The data returned about the Unifi Network Application
-    type: object
-    returned: always
+RETURN = r'''
+application:
+  description: Application information, exactly as returned by the API.
+  returned: always
+  type: dict
+  sample: {"applicationVersion": "11.0.97"}
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.check_response_errors import check_response_errors
-import requests, copy
-from ..module_utils.auth import (
-    UNIFI_NETWORK_ENDPOINT_ARGS,
-)
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.args import connection_argument_spec
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.info import run_single_info_module
 
-def run_module():
-    # define available arguments/parameters a user can pass to the module
-    module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
-
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # changed is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
-    result = dict(
-        changed=False,
-        application_info={}
-    )
-
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
-    )
-
-    # Create the headers for the API request
-    headers = {
-        'Content-Type': 'application/json',
-        'X-API-Key': module.params['unifi_network_api_key']
-    }
-    apiBaseURL = "/proxy/network/integrations"
-
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/info'
-
-    # Perform the API request to get the Applicaiton Info
-    response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
-    if response.status_code != 200:
-        check_response_errors(module, response, result, context=' while retrieving Unifi Network Application Info')
-
-    result['application_info'] = response.json()
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
-    module.exit_json(**result)
 
 def main():
-    run_module()
+    run_single_info_module('info', 'application', connection_argument_spec(), site_scoped=False)
+
 
 if __name__ == '__main__':
     main()

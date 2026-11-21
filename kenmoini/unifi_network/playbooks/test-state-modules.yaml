@@ -1,0 +1,436 @@
+---
+# Proves the state modules are idempotent against a real UniFi Network application.
+# It creates throwaway objects named "ansible-test-*", then for each one checks:
+#   create -> changed, re-run -> not changed, update -> changed, re-run -> not changed,
+#   check mode + diff -> reports a change but writes nothing, delete -> changed, delete again -> not changed.
+# Everything it creates is removed in the "always" section, even when a task fails.
+#   export UNIFI_NETWORK_URL=https://192.168.1.1 UNIFI_NETWORK_API_KEY=... [UNIFI_NETWORK_SITE=default]
+#   ansible-playbook playbooks/test-state-modules.yaml [-e test_vlan_id=3999]
+- name: Test the idempotency of the kenmoini.unifi_network state modules
+  hosts: localhost
+  gather_facts: false
+
+  module_defaults:
+    group/kenmoini.unifi_network.fullset:
+      unifi_network_skip_tls_verify: true
+      unifi_network_site_id: "{{ lookup('ansible.builtin.env', 'UNIFI_NETWORK_SITE') | default('default', true) }}"
+
+  vars:
+    prefix: ansible-test
+    test_vlan_id: 3999
+    test_subnet_prefix: 10.239.99
+
+  tasks:
+    - name: Run the idempotency checks
+      block:
+        # ---------------------------------------------------------------- traffic_matching_list
+        - name: Create a port list
+          kenmoini.unifi_network.traffic_matching_list:
+            name: "{{ prefix }}-ports"
+            type: ports
+            items: [443, "8000-8100"]
+          register: r
+        - name: Port list was created
+          ansible.builtin.assert: {that: [r is changed, r.traffic_matching_list.id is defined]}
+
+        - name: Create the port list again (items in another order)
+          kenmoini.unifi_network.traffic_matching_list:
+            name: "{{ prefix }}-ports"
+            type: ports
+            items: ["8000-8100", 443]
+          register: r
+        - name: Port list is unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Add a port
+          kenmoini.unifi_network.traffic_matching_list:
+            name: "{{ prefix }}-ports"
+            items: [443, 80, "8000-8100"]
+          register: r
+        - name: Port list was updated
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Add the same port again
+          kenmoini.unifi_network.traffic_matching_list:
+            name: "{{ prefix }}-ports"
+            items: [443, 80, "8000-8100"]
+          register: r
+        - name: Port list is unchanged after the update
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Create an address list
+          kenmoini.unifi_network.traffic_matching_list:
+            name: "{{ prefix }}-hosts"
+            type: ipv4_addresses
+            items: ["{{ test_subnet_prefix }}.10", "{{ test_subnet_prefix }}.32/28"]
+          register: r
+        - name: Address list was created
+          ansible.builtin.assert: {that: r is changed}
+
+        # ---------------------------------------------------------------- network
+        - name: Create a network
+          kenmoini.unifi_network.network:
+            name: "{{ prefix }}-net"
+            management: gateway
+            vlan_id: "{{ test_vlan_id }}"
+            ipv4:
+              host_ip_address: "{{ test_subnet_prefix }}.1"
+              prefix_length: 24
+              dhcp:
+                mode: server
+                ip_address_range: {start: "{{ test_subnet_prefix }}.100", stop: "{{ test_subnet_prefix }}.200"}
+                lease_time_seconds: 86400
+          register: r
+        - name: Network was created
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Create the network again
+          kenmoini.unifi_network.network:
+            name: "{{ prefix }}-net"
+            management: gateway
+            vlan_id: "{{ test_vlan_id }}"
+            ipv4:
+              host_ip_address: "{{ test_subnet_prefix }}.1"
+              prefix_length: 24
+              dhcp:
+                mode: server
+                ip_address_range: {start: "{{ test_subnet_prefix }}.100", stop: "{{ test_subnet_prefix }}.200"}
+                lease_time_seconds: 86400
+          register: r
+        - name: Network is unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Preview a lease time change in check mode
+          kenmoini.unifi_network.network:
+            name: "{{ prefix }}-net"
+            ipv4: {dhcp: {lease_time_seconds: 3600}}
+          check_mode: true
+          diff: true
+          register: r
+        - name: Check mode reports the change and the diff
+          ansible.builtin.assert:
+            that:
+              - r is changed
+              - r.diff.before.ipv4Configuration.dhcpConfiguration.leaseTimeSeconds == 86400
+              - r.diff.after.ipv4Configuration.dhcpConfiguration.leaseTimeSeconds == 3600
+
+        - name: Read the network back
+          kenmoini.unifi_network.network_info:
+            name: "{{ prefix }}-net"
+          register: r_net
+        - name: Check mode wrote nothing
+          ansible.builtin.assert:
+            that: r_net.networks[0].ipv4Configuration.dhcpConfiguration.leaseTimeSeconds | default(86400) == 86400
+
+        - name: Change only the lease time
+          kenmoini.unifi_network.network:
+            name: "{{ prefix }}-net"
+            ipv4: {dhcp: {lease_time_seconds: 3600}}
+          register: r
+        - name: Network was updated
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Change the lease time again
+          kenmoini.unifi_network.network:
+            name: "{{ prefix }}-net"
+            ipv4: {dhcp: {lease_time_seconds: 3600}}
+          register: r
+        - name: Network is unchanged after the update
+          ansible.builtin.assert: {that: r is not changed}
+
+        # ---------------------------------------------------------------- firewall_zone
+        - name: Create a zone holding the test network
+          kenmoini.unifi_network.firewall_zone:
+            name: "{{ prefix }}-zone"
+            networks: ["{{ prefix }}-net"]
+          register: r
+        - name: Zone was created
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Create the zone again
+          kenmoini.unifi_network.firewall_zone:
+            name: "{{ prefix }}-zone"
+            networks: ["{{ prefix }}-net"]
+          register: r
+        - name: Zone is unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        # ---------------------------------------------------------------- acl_rule + ordering
+        - name: Create two ACL rules
+          kenmoini.unifi_network.acl_rule:
+            name: "{{ prefix }}-acl-{{ item }}"
+            type: ipv4
+            action: block
+            enabled: false
+            protocols: [tcp]
+            source: {networks: ["{{ prefix }}-net"]}
+            destination: {ip_addresses: ["{{ test_subnet_prefix }}.10"], ports: [445]}
+          loop: [a, b]
+          register: r
+        - name: ACL rules were created
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Create the ACL rules again
+          kenmoini.unifi_network.acl_rule:
+            name: "{{ prefix }}-acl-{{ item }}"
+            type: ipv4
+            action: block
+            enabled: false
+            protocols: [tcp]
+            source: {networks: ["{{ prefix }}-net"]}
+            destination: {ip_addresses: ["{{ test_subnet_prefix }}.10"], ports: [445]}
+          loop: [a, b]
+          register: r
+        - name: ACL rules are unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Put rule b before rule a
+          kenmoini.unifi_network.acl_rule_ordering:
+            rules: ["{{ prefix }}-acl-b", "{{ prefix }}-acl-a"]
+          register: r
+        - name: Ordering was applied
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Put rule b before rule a again
+          kenmoini.unifi_network.acl_rule_ordering:
+            rules: ["{{ prefix }}-acl-b", "{{ prefix }}-acl-a"]
+          register: r
+        - name: Ordering is unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        # ---------------------------------------------------------------- firewall_policy + ordering
+        - name: Create two firewall policies from the test zone to External
+          kenmoini.unifi_network.firewall_policy:
+            name: "{{ prefix }}-fw-{{ item }}"
+            action: block
+            enabled: false
+            source:
+              zone: "{{ prefix }}-zone"
+              networks: ["{{ prefix }}-net"]
+            destination:
+              zone: External
+              port_list: "{{ prefix }}-ports"
+          loop: [a, b]
+          register: r
+        - name: Firewall policies were created
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Create the firewall policies again
+          kenmoini.unifi_network.firewall_policy:
+            name: "{{ prefix }}-fw-{{ item }}"
+            action: block
+            enabled: false
+            source:
+              zone: "{{ prefix }}-zone"
+              networks: ["{{ prefix }}-net"]
+            destination:
+              zone: External
+              port_list: "{{ prefix }}-ports"
+          loop: [a, b]
+          register: r
+        - name: Firewall policies are unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Turn on logging for policy a
+          kenmoini.unifi_network.firewall_policy:
+            name: "{{ prefix }}-fw-a"
+            logging_enabled: true
+          register: r
+        - name: Policy a was updated
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Turn on logging for policy a again
+          kenmoini.unifi_network.firewall_policy:
+            name: "{{ prefix }}-fw-a"
+            logging_enabled: true
+          register: r
+        - name: Policy a is unchanged after the update
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Evaluate policy b before policy a
+          kenmoini.unifi_network.firewall_policy_ordering:
+            source_zone: "{{ prefix }}-zone"
+            destination_zone: External
+            before_system_defined: ["{{ prefix }}-fw-b", "{{ prefix }}-fw-a"]
+          register: r
+        - name: Policy order was applied
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Evaluate policy b before policy a again
+          kenmoini.unifi_network.firewall_policy_ordering:
+            source_zone: "{{ prefix }}-zone"
+            destination_zone: External
+            before_system_defined: ["{{ prefix }}-fw-b", "{{ prefix }}-fw-a"]
+          register: r
+        - name: Policy order is unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        # ---------------------------------------------------------------- wifi_broadcast (created disabled)
+        - name: Create a disabled WiFi broadcast on the test network
+          kenmoini.unifi_network.wifi_broadcast:
+            name: "{{ prefix }}-wifi"
+            enabled: false
+            network: "{{ prefix }}-net"
+            security:
+              type: wpa2_personal
+              passphrase: ansible-test-passphrase
+          register: r
+        - name: WiFi broadcast was created without leaking the passphrase
+          ansible.builtin.assert:
+            that:
+              - r is changed
+              - "'ansible-test-passphrase' not in (r.wifi_broadcast | to_json)"
+
+        - name: Create the WiFi broadcast again (the passphrase cannot be compared)
+          kenmoini.unifi_network.wifi_broadcast:
+            name: "{{ prefix }}-wifi"
+            enabled: false
+            network: "{{ prefix }}-net"
+            security:
+              type: wpa2_personal
+              passphrase: ansible-test-passphrase
+          register: r
+        - name: WiFi broadcast is unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Hide the SSID
+          kenmoini.unifi_network.wifi_broadcast:
+            name: "{{ prefix }}-wifi"
+            hide_name: true
+            security:
+              passphrase: ansible-test-passphrase
+          register: r
+        - name: WiFi broadcast was updated
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Hide the SSID again
+          kenmoini.unifi_network.wifi_broadcast:
+            name: "{{ prefix }}-wifi"
+            hide_name: true
+            security:
+              passphrase: ansible-test-passphrase
+          register: r
+        - name: WiFi broadcast is unchanged after the update
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Rotate the passphrase
+          kenmoini.unifi_network.wifi_broadcast:
+            name: "{{ prefix }}-wifi"
+            security:
+              passphrase: ansible-test-passphrase-2
+            update_passphrase: always
+          register: r
+        - name: Rotation always reports a change
+          ansible.builtin.assert: {that: r is changed}
+
+        # ---------------------------------------------------------------- dns_policy
+        - name: Create an A record
+          kenmoini.unifi_network.dns_policy:
+            type: a
+            domain: "{{ prefix }}.home.arpa"
+            ipv4_address: "{{ test_subnet_prefix }}.10"
+            ttl_seconds: 300
+          register: r
+        - name: A record was created
+          ansible.builtin.assert: {that: r is changed}
+
+        - name: Create the A record again (domain in another case)
+          kenmoini.unifi_network.dns_policy:
+            type: a
+            domain: "{{ prefix | upper }}.home.arpa"
+            ipv4_address: "{{ test_subnet_prefix }}.10"
+            ttl_seconds: 300
+          register: r
+        - name: A record is unchanged
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Point the A record elsewhere
+          kenmoini.unifi_network.dns_policy:
+            type: a
+            domain: "{{ prefix }}.home.arpa"
+            ipv4_address: "{{ test_subnet_prefix }}.11"
+          register: r
+        - name: A record was updated
+          ansible.builtin.assert: {that: r is changed}
+
+        # ---------------------------------------------------------------- hotspot_voucher
+        - name: Make sure two vouchers exist
+          kenmoini.unifi_network.hotspot_voucher:
+            name: "{{ prefix }}-vouchers"
+            count: 2
+            time_limit_minutes: 60
+          register: r
+        - name: Two vouchers were generated
+          ansible.builtin.assert: {that: [r is changed, r.created_count == 2, r.hotspot_vouchers | length == 2]}
+
+        - name: Make sure two vouchers exist again
+          kenmoini.unifi_network.hotspot_voucher:
+            name: "{{ prefix }}-vouchers"
+            count: 2
+            time_limit_minutes: 60
+          register: r
+        - name: No more vouchers were generated
+          ansible.builtin.assert: {that: [r is not changed, r.created_count == 0]}
+
+      always:
+        - name: Delete the vouchers
+          kenmoini.unifi_network.hotspot_voucher:
+            name: "{{ prefix }}-vouchers"
+            state: absent
+          register: r_cleanup
+        - name: Delete the vouchers again
+          kenmoini.unifi_network.hotspot_voucher:
+            name: "{{ prefix }}-vouchers"
+            state: absent
+          register: r
+        - name: Second voucher delete is a no-op
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Delete the WiFi broadcast
+          kenmoini.unifi_network.wifi_broadcast:
+            name: "{{ prefix }}-wifi"
+            state: absent
+            force: true
+
+        - name: Delete the firewall policies
+          kenmoini.unifi_network.firewall_policy:
+            name: "{{ prefix }}-fw-{{ item }}"
+            state: absent
+          loop: [a, b]
+
+        - name: Delete the A record
+          kenmoini.unifi_network.dns_policy:
+            type: a
+            domain: "{{ prefix }}.home.arpa"
+            state: absent
+
+        - name: Delete the ACL rules
+          kenmoini.unifi_network.acl_rule:
+            name: "{{ prefix }}-acl-{{ item }}"
+            state: absent
+          loop: [a, b]
+
+        - name: Delete the zone
+          kenmoini.unifi_network.firewall_zone:
+            name: "{{ prefix }}-zone"
+            state: absent
+
+        - name: Delete the network
+          kenmoini.unifi_network.network:
+            name: "{{ prefix }}-net"
+            state: absent
+            force: true
+          register: r
+        - name: Delete the network again
+          kenmoini.unifi_network.network:
+            name: "{{ prefix }}-net"
+            state: absent
+          register: r
+        - name: Second network delete is a no-op
+          ansible.builtin.assert: {that: r is not changed}
+
+        - name: Delete the lists
+          kenmoini.unifi_network.traffic_matching_list:
+            name: "{{ prefix }}-{{ item }}"
+            state: absent
+          loop: [ports, hosts]

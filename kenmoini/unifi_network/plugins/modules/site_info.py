@@ -1,97 +1,143 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2025, Ken Moini <ken@kenmoini.com>
 # MIT License
 
-ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+from __future__ import absolute_import, division, print_function
 
-DOCUMENTATION = '''
+__metaclass__ = type
+
+DOCUMENTATION = r'''
 ---
 module: site_info
-short_description: Returns the Unifi Network Site Information
+short_description: List Sites in UniFi Network
 version_added: "1.0.0"
 description:
-    - Retrieves information about the Unifi Network Sites managed by this application.
-
+  - "Lists Sites from the UniFi Network application, optionally narrowed by ID, name or filters."
+  - "Every page of results is fetched, so all matching items are returned (the API returns 25 per page by default)."
+  - "Filterable properties for O(unifi_network_filters), with their type and allowed functions:"
+  - "C(id) (uuid): eq, ne, in, notIn."
+  - "C(internalReference) (string): eq, ne, in, notIn."
+  - "C(name) (string): eq, ne, in, notIn."
+options:
+  id:
+    description:
+      - UUID of a single Site to return.
+      - The result is a list with that Site, or an empty list when it does not exist.
+      - Mutually exclusive with O(name), O(unifi_network_filters) and O(unifi_network_filters_raw).
+    type: str
+  name:
+    description:
+      - Return only Sites with exactly this name.
+      - Sent to the API as C(name.eq(...)) and combined with O(unifi_network_filters) using AND.
+    type: str
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
-
+  - kenmoini.unifi_network.filters
+  - kenmoini.unifi_network.attributes
+  - kenmoini.unifi_network.attributes.info
 author:
-    - Ken Moini (@kenmoini)
+  - Ken Moini (@kenmoini)
 '''
 
-EXAMPLES = '''
-# Get the List of Sites from Unifi Network
-- name: Get Unifi Network Application Info
+EXAMPLES = r'''
+- name: List all Sites
   kenmoini.unifi_network.site_info:
-    unifi_network_url: https://unifi.example.com
-    unifi_network_api_key: 1234567890
-  register: r_site_info
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+  register: r_sites
+
+- name: Set the connection once for every module in this collection
+  module_defaults:
+    group/kenmoini.unifi_network.fullset:
+      unifi_network_url: https://192.168.1.1
+      unifi_network_api_key: "{{ unifi_api_key }}"
+      unifi_network_skip_tls_verify: true
+  block:
+    - name: List Sites
+      kenmoini.unifi_network.site_info:
+      register: r_sites
+
+- name: Get a single Site by UUID
+  kenmoini.unifi_network.site_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    id: 497f6eca-6276-4993-bfeb-53cbbbba6f08
+  register: r_one
+
+- name: Get a Site by name
+  kenmoini.unifi_network.site_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    name: Example
+  register: r_named
+
+- name: Show the UUID of the Site
+  ansible.builtin.debug:
+    msg: "{{ r_named.sites[0].id }}"
+  when: r_named.sites | length > 0
+
+- name: Filter Sites with one condition
+  kenmoini.unifi_network.site_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    filters:
+      property: internalReference
+      function: eq
+      value: "default"
+  register: r_filtered
+
+- name: Combine conditions; filters_match any ORs them, all (default) ANDs them
+  kenmoini.unifi_network.site_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    filters_match: any
+    filters:
+      - property: internalReference
+        function: eq
+        value: "default"
+      - property: id
+        function: in
+        value:
+          - 497f6eca-6276-4993-bfeb-53cbbbba6f08
+          - 7f1c8a52-5b6e-4d0e-9f53-2b7a1d0c9e11
+  register: r_any
+
+- name: Use a raw filter expression for NOT or nested logic
+  kenmoini.unifi_network.site_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    filters_raw: "not(id.eq('497f6eca-6276-4993-bfeb-53cbbbba6f08'))"
+  register: r_raw
+
+- name: Return at most 10 Sites
+  kenmoini.unifi_network.site_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    limit: 10
+  register: r_some
 '''
 
-RETURN = '''
-site_info:
-    description: The data returned about the list of Sites managed by this Unifi Network Application
-    type: object
-    returned: always
+RETURN = r'''
+sites:
+  description:
+    - The matching Sites, exactly as returned by the API (camelCase keys).
+  returned: always
+  type: list
+  elements: dict
+  sample:
+    - id: 497f6eca-6276-4993-bfeb-53cbbbba6f08
+      internalReference: string
+      name: string
 '''
 
-import requests, copy
-from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.check_response_errors import check_response_errors
-from ..module_utils.auth import (
-    UNIFI_NETWORK_ENDPOINT_ARGS,
-)
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.info import run_info_module
 
-def run_module():
-    # define available arguments/parameters a user can pass to the module
-    module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
-
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # changed is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
-    result = dict(
-        changed=False,
-        site_info={}
-    )
-
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
-    )
-
-    # Create the headers for the API request
-    headers = {
-        'Content-Type': 'application/json',
-        'X-API-Key': module.params['unifi_network_api_key']
-    }
-    apiBaseURL = "/proxy/network/integrations"
-
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites'
-
-    # Perform the API request to get the Site Info
-    response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
-    if response.status_code != 200:
-        check_response_errors(module, response, result, context=' while retrieving Site Info')
-
-    result['site_info'] = response.json()
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
-    module.exit_json(**result)
 
 def main():
-    run_module()
+    run_info_module('sites', 'sites', site_scoped=False, id_lookup='filter')
+
 
 if __name__ == '__main__':
     main()

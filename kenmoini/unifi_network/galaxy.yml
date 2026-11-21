@@ -9,7 +9,7 @@ namespace: kenmoini
 name: unifi_network
 
 # The version of the collection. Must be compatible with semantic versioning
-version: 1.0.0
+version: 2.0.0
 
 # The path to the Markdown (.md) readme file. This path is relative to the root of the collection
 readme: README.md
@@ -61,7 +61,10 @@ issues: https://github.com/kenmoini/ansible-collections/issues
 # artifact. A pattern is matched from the relative path of the file or directory of the collection directory. This
 # uses 'fnmatch' to match the files or directories. Some directories and files like 'galaxy.yml', '*.pyc', '*.retry',
 # and '.git' are always filtered. Mutually exclusive with 'manifest'
-build_ignore: []
+build_ignore:
+  - docs/api
+  - tests/output
+  - "*.tar.gz"
 
 # A dict controlling use of manifest directives used in building the collection artifact. The key 'directives' is a
 # list of MANIFEST.in style
@@ -69,4 +72,3 @@ build_ignore: []
 # 'omit_default_directives' is a boolean that controls whether the default directives are used. Mutually exclusive
 # with 'build_ignore'
 # manifest: null
-

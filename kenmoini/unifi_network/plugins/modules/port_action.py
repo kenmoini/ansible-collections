@@ -1,123 +1,104 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2025, Ken Moini <ken@kenmoini.com>
 # MIT License
 
-ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+from __future__ import absolute_import, division, print_function
 
-DOCUMENTATION = '''
+__metaclass__ = type
+
+DOCUMENTATION = r'''
 ---
 module: port_action
-short_description: Performs an action on a specific Port on a Device from Unifi Network
+short_description: Run an action, such as a PoE power cycle, on a port of a UniFi device
 version_added: "1.0.0"
 description:
-    - Perform an action on an specific port of a adopted device.
-
+  - Runs an action on one port of an adopted device. The only action the API offers today is V(power_cycle),
+    which turns PoE off and on again to reboot the powered device.
+  - This is an imperative operation, so the module always reports a change.
+    In check mode it only verifies that the device and port exist.
+options:
+  device:
+    description:
+      - The device, given as its name, MAC address or UUID.
+    type: str
+    required: true
+    aliases: [device_id, device_uuid, unifi_network_device_id, unifi_network_device_uuid]
+  port:
+    description:
+      - The port index, as numbered on the device.
+    type: int
+    required: true
+    aliases: [port_id, port_idx, unifi_network_port_id, unifi_network_device_port_id]
+  action:
+    description:
+      - The action to run.
+    type: str
+    required: true
+    choices: [power_cycle]
+    aliases: [port_action]
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
-  - kenmoini.unifi_network.site_id
-  - kenmoini.unifi_network.device_id
-  - kenmoini.unifi_network.port_id
-
-options:
-  port_action:
-    description:
-      - The action to take on the device's port.
-    required: true
-    type: str
-    options:
-      - power_cycle
-    aliases: ['action']
-
+  - kenmoini.unifi_network.site
+  - kenmoini.unifi_network.attributes
+  - kenmoini.unifi_network.attributes.action
 author:
-    - Ken Moini (@kenmoini)
+  - Ken Moini (@kenmoini)
 '''
 
-EXAMPLES = '''
-# Power Cycle a Port on a PoE Device in Unifi Network
-- name: Power Cycle port
+EXAMPLES = r'''
+- name: Reboot the camera on port 7 by power cycling PoE
   kenmoini.unifi_network.port_action:
-    unifi_network_url: https://unifi.example.com
-    unifi_network_api_key: 1234567890
-    unifi_network_site_id: 88f7af54-1234-5678-9101-abcdefghijklm
-    unifi_network_device_id: 1234abcd-5678-efgh-9101-ijklmnopqrst
-    unifi_network_port_id: 1
-    port_action: power_cyle
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+    device: USW Pro Max 24 PoE
+    port: 7
+    action: power_cycle
 '''
 
-import requests, copy
+RETURN = r'''
+port:
+  description: The port the action ran on, from the device's interface list before the action.
+  returned: always
+  type: dict
+  sample: {"idx": 7, "state": "UP", "poe": {"enabled": true, "state": "UP"}}
+'''
+
 from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.check_response_errors import check_response_errors
-from ..module_utils.auth import (
-    UNIFI_NETWORK_ENDPOINT_ARGS,
-)
-from ..module_utils.args import (
-    SITE_ID_ARG_SPEC,
-    DEVICE_ID_ARG_SPEC,
-    PORT_ID_ARG_SPEC,
-)
 
-def run_module():
-    # define available arguments/parameters a user can pass to the module
-    module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
-    module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
-    module_args.update(copy.deepcopy(DEVICE_ID_ARG_SPEC))
-    module_args.update(copy.deepcopy(PORT_ID_ARG_SPEC))
-    module_args.update(
-            dict(action=dict(type='str', required=True, choices=['power_cycle'], aliases=['port_action']),
-        )
-    )
-    
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # changed is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
-    result = dict(
-        changed=False,
-    )
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.api import UnifiNetworkClient, UnifiNetworkError
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.args import connection_argument_spec, site_argument_spec
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.resource import fail_from_exception, resolve_site
 
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
-    )
-
-    # Create the headers for the API request
-    headers = {
-        'Content-Type': 'application/json',
-        'X-API-Key': module.params['unifi_network_api_key']
-    }
-    apiBaseURL = "/proxy/network/integrations"
-
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/devices/' + module.params['unifi_network_device_id'] + '/interfaces/ports/' + str(module.params['unifi_network_port_id']) + '/actions'
-
-    # Assemble the payload for the action
-    payload = {
-        'action': module.params['action'].upper()
-    }
-
-    # Perform the API request to get the Adopted Devices Info
-    # TODO: Check Mode Enhancement: If this is checkmode, skip the actual POST but query the device list to ensure the device exists
-    response = requests.post(targetURL, headers=headers, json=payload, verify=not module.params['unifi_network_skip_tls_verify'])
-    if response.status_code != 200:
-        check_response_errors(module, response, result, context=' while retrieving a specific Device Info')
-
-    result['changed'] = True
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
-    module.exit_json(**result)
 
 def main():
-    run_module()
+    spec = connection_argument_spec()
+    spec.update(site_argument_spec())
+    spec.update(
+        device=dict(type='str', required=True,
+                    aliases=['device_id', 'device_uuid', 'unifi_network_device_id', 'unifi_network_device_uuid']),
+        port=dict(type='int', required=True, aliases=['port_id', 'port_idx', 'unifi_network_port_id', 'unifi_network_device_port_id']),
+        action=dict(type='str', required=True, choices=['power_cycle'], aliases=['port_action']),
+    )
+    module = AnsibleModule(argument_spec=spec, supports_check_mode=True)
+    p = module.params
+    try:
+        client = UnifiNetworkClient.from_module(module)
+        refs = resolve_site(module, client)
+        path = '/v1/sites/%s/devices/%s' % (refs.site_id, refs.resolve('device', p['device']))
+        device = client.get(path)
+        ports = ((device or {}).get('interfaces') or {}).get('ports') or []
+        port = [x for x in ports if x.get('idx') == p['port']]
+        if not port:
+            raise UnifiNetworkError('Device %r has no port %d' % (p['device'], p['port']))
+        if not module.check_mode:
+            client.post('%s/interfaces/ports/%d/actions' % (path, p['port']), {'action': p['action'].upper()})
+    except UnifiNetworkError as exc:
+        fail_from_exception(module, exc)
+    module.exit_json(changed=True, port=port[0])
+
 
 if __name__ == '__main__':
     main()

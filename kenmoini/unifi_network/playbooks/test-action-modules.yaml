@@ -1,45 +1,39 @@
 ---
-- name: Test the functionality of the powerdns_admin collection
+# Imperative modules. The action tasks run in check mode unless you pass -e run_actions=true,
+# because restarting a device or power cycling a port interrupts traffic.
+#   ansible-playbook playbooks/test-action-modules.yaml -e device_name="U7 Pro" [-e port=1] [-e run_actions=true]
+- name: Test the action modules of the kenmoini.unifi_network collection
   hosts: localhost
   gather_facts: false
 
   module_defaults:
     group/kenmoini.unifi_network.fullset:
       unifi_network_skip_tls_verify: true
+      unifi_network_site_id: "{{ lookup('ansible.builtin.env', 'UNIFI_NETWORK_SITE') | default('default', true) }}"
+
+  vars:
+    run_actions: false
 
   tasks:
+    - name: Find the device by name
+      kenmoini.unifi_network.device_info:
+        name: "{{ device_name }}"
+      register: r_device
 
-    - name: Get site info from Unifi Network
-      kenmoini.unifi_network.site_info:
-      register: site_result
+    - name: The device exists
+      ansible.builtin.assert:
+        that: r_device.devices | length == 1
 
-    - name: Show site info
-      debug:
-        var: site_result
+    - name: Restart the device
+      kenmoini.unifi_network.device_action:
+        device: "{{ device_name }}"
+        action: restart
+      check_mode: "{{ not (run_actions | bool) }}"
 
-    - name: Get device info from Unifi Network for a specific AP
-      kenmoini.unifi_network.adopted_devices_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        filter:
-          property: name
-          function: eq
-          #value: "U7 Pro"
-          value: "USW Pro Max 24 PoE"
-      register: device_result
-
-    - name: Show device info
-      debug:
-        var: device_result
-
-    # - name: Perform a restart action on the specific device
-    #   kenmoini.unifi_network.device_action:
-    #     unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-    #     unifi_network_device_id: "{{ device_result.adopted_devices_info.data[0].id }}"
-    #     device_action: restart
-
-    # - name: Perform a power cycle action on port 1 of the specific device
-    #   kenmoini.unifi_network.port_action:
-    #     unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-    #     unifi_network_device_id: "{{ device_result.adopted_devices_info.data[0].id }}"
-    #     unifi_network_port_id: 1
-    #     port_action: power_cycle
+    - name: Power cycle a PoE port on the device
+      kenmoini.unifi_network.port_action:
+        device: "{{ device_name }}"
+        port: "{{ port }}"
+        action: power_cycle
+      check_mode: "{{ not (run_actions | bool) }}"
+      when: port is defined

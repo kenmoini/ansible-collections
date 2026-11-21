@@ -3,7 +3,7 @@
 # Copyright: (c) 2025, Ken Moini <ken@kenmoini.com>
 # MIT License
 
-# Options for authenticating with the API.
+# Options for connecting to the UniFi Network Integration API.
 
 from __future__ import absolute_import, division, print_function
 
@@ -15,28 +15,42 @@ class ModuleDocFragment(object):
 options:
   unifi_network_url:
     description:
-      - This is the URL of your Unifi Network endpoint. Can also be specified via the environment variables C(UNIFI_NETWORK_URL) or C(UNIFI_NETWORK_API).
+      - URL of the UniFi console hosting the Network application, for example V(https://192.168.1.1).
+      - Can also be set with the E(UNIFI_NETWORK_URL) or E(UNIFI_NETWORK_API) environment variables.
     required: true
-    aliases: ['unifi_network_api', 'url']
+    aliases: ['url']
     type: str
-    env:
-      - name: UNIFI_NETWORK_URL
-      - name: UNIFI_NETWORK_API
   unifi_network_api_key:
     description:
-      - This is the API Key for your Unifi Network endpoint. Can also be specified via the environment variable C(UNIFI_NETWORK_API_KEY).
+      - API key created in the UniFi Network application under C(Settings > Control Plane > Integrations).
+      - Can also be set with the E(UNIFI_NETWORK_API_KEY) environment variable.
     required: true
     aliases: ['api_key']
     type: str
-    env:
-      - name: UNIFI_NETWORK_API_KEY
   unifi_network_skip_tls_verify:
     description:
-      - Whether or not to skip TLS verification. Can also be specified via the environment variable C(UNIFI_NETWORK_SKIP_TLS_VERIFY).
+      - Skip TLS certificate verification, for consoles using the default self-signed certificate.
+      - Can also be set with the E(UNIFI_NETWORK_SKIP_TLS_VERIFY) environment variable.
     required: false
     default: false
     aliases: ['skip_tls_verify']
     type: bool
-    env:
-      - name: UNIFI_NETWORK_SKIP_TLS_VERIFY
+  unifi_network_api_path:
+    description:
+      - Path of the Network Integration API below O(unifi_network_url).
+      - To go through the UniFi cloud connector, set O(unifi_network_url=https://api.ui.com) and this to
+        V(/v1/connector/consoles/<console id>/proxy/network/integration).
+      - Can also be set with the E(UNIFI_NETWORK_API_PATH) environment variable.
+    required: false
+    default: /proxy/network/integrations
+    aliases: ['api_path']
+    type: str
+  unifi_network_timeout:
+    description:
+      - Timeout in seconds for each API request.
+      - Can also be set with the E(UNIFI_NETWORK_TIMEOUT) environment variable.
+    required: false
+    default: 30
+    aliases: ['request_timeout']
+    type: int
 """

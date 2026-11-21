@@ -1,5 +1,9 @@
 ---
-- name: Test the functionality of the powerdns_admin collection
+# Exercises every read-only module against a real UniFi Network application.
+# Run it normally and with --check: info modules must return the same data in both modes.
+#   export UNIFI_NETWORK_URL=https://192.168.1.1 UNIFI_NETWORK_API_KEY=... [UNIFI_NETWORK_SITE=default]
+#   ansible-playbook playbooks/test-info-modules.yaml [--check]
+- name: Test the read-only modules of the kenmoini.unifi_network collection
   hosts: localhost
   gather_facts: false
 
@@ -7,265 +11,305 @@
     group/kenmoini.unifi_network.fullset:
       unifi_network_skip_tls_verify: true
 
+  vars:
+    site: "{{ lookup('ansible.builtin.env', 'UNIFI_NETWORK_SITE') | default('default', true) }}"
+
   tasks:
-
-    - name: Get application info from Unifi Network
+    - name: Get application info
       kenmoini.unifi_network.application_info:
-      register: result
+      register: r_app
 
-    - name: Show application info
-      debug:
-        var: result.application_info
+    - name: Show the application version
+      ansible.builtin.debug:
+        msg: "UniFi Network {{ r_app.application.applicationVersion | default('unknown') }}"
 
-    - name: Get site info from Unifi Network
+    - name: List sites
       kenmoini.unifi_network.site_info:
-      register: site_result
+      register: r_sites
 
-    - name: Show site info
-      debug:
-        var: site_result
+    - name: Get the selected site by name or internal reference
+      kenmoini.unifi_network.site_info:
+        filters_match: any
+        filters:
+          - {property: name, function: eq, value: "{{ site }}"}
+          - {property: internalReference, function: eq, value: "{{ site }}"}
+      register: r_site
 
-    - name: Get adopted devices info from Unifi Network
-      kenmoini.unifi_network.adopted_devices_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: adopted_devices_result
+    - name: The selected site exists
+      ansible.builtin.assert:
+        that:
+          - r_sites.sites | length > 0
+          - r_site.sites | length == 1
 
-    - name: Show adopted devices info
-      debug:
-        var: adopted_devices_result
-
-    - name: Get specific device info from Unifi Network
+    - name: List with device_info
       kenmoini.unifi_network.device_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_device_id: "{{ adopted_devices_result.adopted_devices_info.data[0].id }}"
-      register: device_info_result
+        unifi_network_site_id: "{{ site }}"
+      register: r_devices
 
-    - name: Show specific device info
-      debug:
-        var: device_info_result.device_info
+    - name: device_info returns a list
+      ansible.builtin.assert:
+        that: r_devices.devices is sequence
+        quiet: true
 
-    - name: Get specific device statistics from Unifi Network
-      kenmoini.unifi_network.device_statistics:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_device_id: "{{ adopted_devices_result.adopted_devices_info.data[0].id }}"
-      register: device_statistics_result
+    - name: List with pending_device_info
+      kenmoini.unifi_network.pending_device_info:
+      register: r_pending_devices
 
-    - name: Show specific device statistics
-      debug:
-        var: device_statistics_result.device_statistics
+    - name: pending_device_info returns a list
+      ansible.builtin.assert:
+        that: r_pending_devices.pending_devices is sequence
+        quiet: true
 
-    - name: Get pending devices info from Unifi Network
-      kenmoini.unifi_network.pending_devices:
-      register: pending_devices_result
-
-    - name: Show pending devices info
-      debug:
-        var: pending_devices_result
-
-    - name: Get clients info from Unifi Network
-      kenmoini.unifi_network.clients_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: clients_info_result
-
-    - name: Show clients info
-      debug:
-        var: clients_info_result.clients_info
-
-    - name: Get specific client info from Unifi Network
+    - name: List with client_info
       kenmoini.unifi_network.client_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_client_id: "{{ clients_info_result.clients_info.data[0].id }}"
-      register: client_info_result
+        unifi_network_site_id: "{{ site }}"
+      register: r_clients
 
-    - name: Show specific client info
-      debug:
-        var: client_info_result.client_info
+    - name: client_info returns a list
+      ansible.builtin.assert:
+        that: r_clients.clients is sequence
+        quiet: true
 
-    - name: Get networks info from Unifi Network with a specific Name
-      kenmoini.unifi_network.networks_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        filter:
-          property: "name"
-          function: "eq"
-          value: "Default"
-      register: networks_info_result
-
-    - name: Show networks info
-      debug:
-        var: networks_info_result
-
-    - name: Get specific network info from Unifi Network
+    - name: List with network_info
       kenmoini.unifi_network.network_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_network_id: "{{ networks_info_result.networks_info.data[0].id }}"
-      register: network_info_result
+        unifi_network_site_id: "{{ site }}"
+      register: r_networks
 
-    - name: Show specific network info
-      debug:
-        var: network_info_result.network_info
+    - name: network_info returns a list
+      ansible.builtin.assert:
+        that: r_networks.networks is sequence
+        quiet: true
 
-    - name: Get specific network references from Unifi Network
-      kenmoini.unifi_network.network_references:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_network_id: "{{ networks_info_result.networks_info.data[0].id }}"
-      register: network_references_result
-
-    - name: Show specific network references
-      debug:
-        var: network_references_result.network_references
-
-    - name: Get wifi broadcasts info from Unifi Network
-      kenmoini.unifi_network.wifi_broadcasts_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: wifi_broadcasts_info_result
-
-    - name: Show wifi broadcasts info
-      debug:
-        var: wifi_broadcasts_info_result
-
-    - name: Get specific wifi broadcast info from Unifi Network
-      kenmoini.unifi_network.wifi_broadcast_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_wifi_broadcast_id: "{{ wifi_broadcasts_info_result.wifi_broadcasts_info.data[0].id }}"
-      register: wifi_broadcast_info_result
-
-    - name: Show specific wifi broadcast info
-      debug:
-        var: wifi_broadcast_info_result
-
-    - name: Get firewall zones info from Unifi Network
-      kenmoini.unifi_network.firewall_zones_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: firewall_zones_info_result
-
-    - name: Show firewall zones info
-      debug:
-        var: firewall_zones_info_result
-
-    - name: Get specific firewall zone info from Unifi Network
+    - name: List with firewall_zone_info
       kenmoini.unifi_network.firewall_zone_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_firewall_zone_id: "{{ firewall_zones_info_result.firewall_zones_info.data[0].id }}"
-      register: firewall_zone_info_result
+        unifi_network_site_id: "{{ site }}"
+      register: r_firewall_zones
 
-    - name: Show specific firewall zone info
-      debug:
-        var: firewall_zone_info_result.firewall_zone_info
+    - name: firewall_zone_info returns a list
+      ansible.builtin.assert:
+        that: r_firewall_zones.firewall_zones is sequence
+        quiet: true
 
-    - name: Get ACL rules info from Unifi Network
-      kenmoini.unifi_network.acl_rules_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: acl_rules_info_result
+    - name: List with firewall_policy_info
+      kenmoini.unifi_network.firewall_policy_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_firewall_policies
 
-    - name: Show ACL rules info
-      debug:
-        var: acl_rules_info_result
+    - name: firewall_policy_info returns a list
+      ansible.builtin.assert:
+        that: r_firewall_policies.firewall_policies is sequence
+        quiet: true
 
-    # - name: Get specific ACL rule info from Unifi Network
-    #   kenmoini.unifi_network.acl_rule_info:
-    #     unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-    #     unifi_network_acl_rule_id: "{{ acl_rules_info_result.acl_rules_info.data[0].id }}"
-    #     unifi_network_skip_tls_verify: true
-    #   register: acl_rule_info_result
+    - name: List with acl_rule_info
+      kenmoini.unifi_network.acl_rule_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_acl_rules
 
-    # - name: Show specific ACL rule info
-    #   debug:
-    #     var: acl_rule_info_result.acl_rule_info
+    - name: acl_rule_info returns a list
+      ansible.builtin.assert:
+        that: r_acl_rules.acl_rules is sequence
+        quiet: true
 
-    - name: Get WAN interfaces info from Unifi Network
-      kenmoini.unifi_network.wan_interfaces_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: wan_interfaces_info_result
+    - name: List with dns_policy_info
+      kenmoini.unifi_network.dns_policy_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_dns_policies
 
-    - name: Show WAN interfaces info
-      debug:
-        var: wan_interfaces_info_result
+    - name: dns_policy_info returns a list
+      ansible.builtin.assert:
+        that: r_dns_policies.dns_policies is sequence
+        quiet: true
 
-    - name: Get site-to-site tunnels info from Unifi Network
-      kenmoini.unifi_network.site_to_site_tunnels_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: site_to_site_tunnels_info_result
-
-    - name: Show site-to-site tunnels info
-      debug:
-        var: site_to_site_tunnels_info_result
-
-    - name: Get VPN servers info from Unifi Network
-      kenmoini.unifi_network.vpn_servers_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: vpn_servers_info_result
-
-    - name: Show VPN servers info
-      debug:
-        var: vpn_servers_info_result
-
-    - name: Get device tags info from Unifi Network
-      kenmoini.unifi_network.device_tags_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: device_tags_info_result
-
-    - name: Show device tags info
-      debug:
-        var: device_tags_info_result
-
-    - name: Get DPI categories info from Unifi Network
-      kenmoini.unifi_network.dpi_categories_info:
-      register: dpi_categories_info_result
-
-    - name: Show DPI categories info
-      debug:
-        var: dpi_categories_info_result
-
-    - name: Get DPI applications info from Unifi Network
-      kenmoini.unifi_network.dpi_applications_info:
-      register: dpi_applications_info_result
-
-    - name: Show DPI applications info
-      debug:
-        var: dpi_applications_info_result
-
-    - name: Get Countries info from Unifi Network
-      kenmoini.unifi_network.countries_info:
-      register: countries_info_result
-
-    - name: Show Countries info
-      debug:
-        var: countries_info_result
-
-    - name: Get Hotspot Vouchers info from Unifi Network
-      kenmoini.unifi_network.hotspot_vouchers_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: hotspot_vouchers_info_result
-
-    - name: Show Hotspot Vouchers info
-      debug:
-        var: hotspot_vouchers_info_result
-
-    - name: Get Hotspot Voucher info from Unifi Network
-      kenmoini.unifi_network.hotspot_voucher_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_hotspot_voucher_id: "{{ hotspot_vouchers_info_result.hotspot_vouchers_info.data[0].id }}"
-      register: hotspot_voucher_info_result
-
-    - name: Show Hotspot Voucher info
-      debug:
-        var: hotspot_voucher_info_result
-
-    - name: Get Traffic Matching List info from Unifi Network
-      kenmoini.unifi_network.traffic_matching_lists_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-      register: traffic_matching_lists_info_result
-
-    - name: Show Traffic Matching List info
-      debug:
-        var: traffic_matching_lists_info_result
-
-    - name: Get specific Traffic Matching List info from Unifi Network
+    - name: List with traffic_matching_list_info
       kenmoini.unifi_network.traffic_matching_list_info:
-        unifi_network_site_id: "{{ site_result.site_info.data[0].id }}"
-        unifi_network_traffic_matching_list_id: "{{ traffic_matching_lists_info_result.traffic_matching_lists_info.data[0].id }}"
-      register: traffic_matching_list_info_result
+        unifi_network_site_id: "{{ site }}"
+      register: r_traffic_matching_lists
 
-    - name: Show specific Traffic Matching List info
-      debug:
-        var: traffic_matching_list_info_result
+    - name: traffic_matching_list_info returns a list
+      ansible.builtin.assert:
+        that: r_traffic_matching_lists.traffic_matching_lists is sequence
+        quiet: true
+
+    - name: List with wifi_broadcast_info
+      kenmoini.unifi_network.wifi_broadcast_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_wifi_broadcasts
+
+    - name: wifi_broadcast_info returns a list
+      ansible.builtin.assert:
+        that: r_wifi_broadcasts.wifi_broadcasts is sequence
+        quiet: true
+
+    - name: List with hotspot_voucher_info
+      kenmoini.unifi_network.hotspot_voucher_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_hotspot_vouchers
+
+    - name: hotspot_voucher_info returns a list
+      ansible.builtin.assert:
+        that: r_hotspot_vouchers.hotspot_vouchers is sequence
+        quiet: true
+
+    - name: List with radius_profile_info
+      kenmoini.unifi_network.radius_profile_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_radius_profiles
+
+    - name: radius_profile_info returns a list
+      ansible.builtin.assert:
+        that: r_radius_profiles.radius_profiles is sequence
+        quiet: true
+
+    - name: List with vpn_server_info
+      kenmoini.unifi_network.vpn_server_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_vpn_servers
+
+    - name: vpn_server_info returns a list
+      ansible.builtin.assert:
+        that: r_vpn_servers.vpn_servers is sequence
+        quiet: true
+
+    - name: List with site_to_site_tunnel_info
+      kenmoini.unifi_network.site_to_site_tunnel_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_site_to_site_tunnels
+
+    - name: site_to_site_tunnel_info returns a list
+      ansible.builtin.assert:
+        that: r_site_to_site_tunnels.site_to_site_tunnels is sequence
+        quiet: true
+
+    - name: List with wan_interface_info
+      kenmoini.unifi_network.wan_interface_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_wan_interfaces
+
+    - name: wan_interface_info returns a list
+      ansible.builtin.assert:
+        that: r_wan_interfaces.wan_interfaces is sequence
+        quiet: true
+
+    - name: List with device_tag_info
+      kenmoini.unifi_network.device_tag_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_device_tags
+
+    - name: device_tag_info returns a list
+      ansible.builtin.assert:
+        that: r_device_tags.device_tags is sequence
+        quiet: true
+
+    - name: List with lag_info
+      kenmoini.unifi_network.lag_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_lags
+
+    - name: lag_info returns a list
+      ansible.builtin.assert:
+        that: r_lags.lags is sequence
+        quiet: true
+
+    - name: List with mc_lag_domain_info
+      kenmoini.unifi_network.mc_lag_domain_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_mc_lag_domains
+
+    - name: mc_lag_domain_info returns a list
+      ansible.builtin.assert:
+        that: r_mc_lag_domains.mc_lag_domains is sequence
+        quiet: true
+
+    - name: List with switch_stack_info
+      kenmoini.unifi_network.switch_stack_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_switch_stacks
+
+    - name: switch_stack_info returns a list
+      ansible.builtin.assert:
+        that: r_switch_stacks.switch_stacks is sequence
+        quiet: true
+
+    - name: List the first 10 with country_info
+      kenmoini.unifi_network.country_info:
+        limit: 10
+      register: r_countries
+
+    - name: country_info honours limit
+      ansible.builtin.assert:
+        that: r_countries.countries | length <= 10
+        quiet: true
+
+    - name: List the first 10 with dpi_application_info
+      kenmoini.unifi_network.dpi_application_info:
+        limit: 10
+      register: r_dpi_applications
+
+    - name: dpi_application_info honours limit
+      ansible.builtin.assert:
+        that: r_dpi_applications.dpi_applications | length <= 10
+        quiet: true
+
+    - name: List the first 10 with dpi_category_info
+      kenmoini.unifi_network.dpi_category_info:
+        limit: 10
+      register: r_dpi_categories
+
+    - name: dpi_category_info honours limit
+      ansible.builtin.assert:
+        that: r_dpi_categories.dpi_categories | length <= 10
+        quiet: true
+
+    - name: Get one network by name, and its references
+      when: r_networks.networks | length > 0
+      block:
+        - name: Get the first network by name
+          kenmoini.unifi_network.network_info:
+            unifi_network_site_id: "{{ site }}"
+            name: "{{ r_networks.networks[0].name }}"
+          register: r_network
+
+        - name: Get the same network by id
+          kenmoini.unifi_network.network_info:
+            unifi_network_site_id: "{{ site }}"
+            id: "{{ r_networks.networks[0].id }}"
+          register: r_network_by_id
+
+        - name: Name and id lookups agree
+          ansible.builtin.assert:
+            that: r_network.networks[0].id == r_network_by_id.networks[0].id
+
+        - name: Get what references the network
+          kenmoini.unifi_network.network_references_info:
+            unifi_network_site_id: "{{ site }}"
+            network: "{{ r_networks.networks[0].name }}"
+          register: r_refs
+
+    - name: Filter networks with typed values and OR logic
+      kenmoini.unifi_network.network_info:
+        unifi_network_site_id: "{{ site }}"
+        filters_match: any
+        filters:
+          - {property: vlanId, function: ge, value: 2}
+          - {property: enabled, function: eq, value: false}
+      register: r_filtered
+
+    - name: Get statistics for the first adopted device
+      kenmoini.unifi_network.device_statistics_info:
+        unifi_network_site_id: "{{ site }}"
+        device: "{{ r_devices.devices[0].id }}"
+      register: r_stats
+      when: r_devices.devices | length > 0
+
+    - name: Get the ACL rule order
+      kenmoini.unifi_network.acl_rule_ordering_info:
+        unifi_network_site_id: "{{ site }}"
+      register: r_acl_order
+
+    - name: Get the firewall policy order between the first two zones
+      kenmoini.unifi_network.firewall_policy_ordering_info:
+        unifi_network_site_id: "{{ site }}"
+        source_zone: "{{ r_firewall_zones.firewall_zones[0].name }}"
+        destination_zone: "{{ r_firewall_zones.firewall_zones[1].name }}"
+      register: r_fw_order
+      when: r_firewall_zones.firewall_zones | length > 1

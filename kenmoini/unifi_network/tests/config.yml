@@ -1,0 +1,4 @@
+---
+# ansible-test configuration: the modules only support Python 3.9 and newer.
+modules:
+  python_requires: '>=3.9'

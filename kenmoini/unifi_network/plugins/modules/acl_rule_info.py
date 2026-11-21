@@ -1,115 +1,202 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2025, Ken Moini <ken@kenmoini.com>
 # MIT License
 
-ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+from __future__ import absolute_import, division, print_function
 
-DOCUMENTATION = '''
+__metaclass__ = type
+
+DOCUMENTATION = r'''
 ---
 module: acl_rule_info
-short_description: Returns the details about a specific ACL Rule from Unifi Network
+short_description: List ACL Rules in UniFi Network
 version_added: "1.0.0"
 description:
-    - Retrieves information about a specific ACL Rule in this Unifi Network Application.
-
+  - "Lists ACL Rules at a site of the UniFi Network application, optionally narrowed by ID, name or filters."
+  - "Every page of results is fetched, so all matching items are returned (the API returns 25 per page by default)."
+  - "Filterable properties for O(unifi_network_filters), with their type and allowed functions:"
+  - "C(type) (string): eq, ne, in, notIn."
+  - "C(id) (uuid): eq, ne, in, notIn."
+  - "C(enabled) (boolean): eq, ne."
+  - "C(name) (string): eq, ne, in, notIn, like."
+  - "C(description) (string): isNull, isNotNull, eq, ne, in, notIn, like."
+  - "C(action) (string): eq, ne, in, notIn."
+  - "C(index) (integer): eq, ne, gt, ge, lt, le, in, notIn."
+  - "C(protocolFilter) (set(string)): isNull, isNotNull, contains, containsAny, containsAll, containsExactly."
+  - "C(networkId) (uuid): isNull, isNotNull, eq, ne, in, notIn."
+  - "C(enforcingDeviceFilter.deviceIds) (set(uuid)): isNull, isNotNull, contains, containsAny, containsAll, containsExactly."
+  - "C(metadata.origin) (string): eq, ne, in, notIn."
+  - "C(sourceFilter.type) (string): isNull, isNotNull, eq, ne, in, notIn."
+  - "C(sourceFilter.ipAddressesOrSubnets) (set(string)): contains, containsAny, containsAll, containsExactly."
+  - "C(sourceFilter.portFilter) (set(integer)): isNull, isNotNull, contains, containsAny, containsAll, containsExactly."
+  - "C(sourceFilter.networkIds) (set(uuid)): contains, containsAny, containsAll, containsExactly."
+  - "C(sourceFilter.macAddresses) (set(string)): contains, containsAny, containsAll, containsExactly."
+  - "C(sourceFilter.prefixLength) (integer): isNull, isNotNull, eq, ne, gt, ge, lt, le, in, notIn."
+  - "C(destinationFilter.type) (string): isNull, isNotNull, eq, ne, in, notIn."
+  - "C(destinationFilter.ipAddressesOrSubnets) (set(string)): contains, containsAny, containsAll, containsExactly."
+  - "C(destinationFilter.portFilter) (set(integer)): isNull, isNotNull, contains, containsAny, containsAll, containsExactly."
+  - "C(destinationFilter.networkIds) (set(uuid)): contains, containsAny, containsAll, containsExactly."
+  - "C(destinationFilter.macAddresses) (set(string)): contains, containsAny, containsAll, containsExactly."
+  - "C(destinationFilter.prefixLength) (integer): isNull, isNotNull, eq, ne, gt, ge, lt, le, in, notIn."
+  - "Replaces C(acl_rules_info), which now redirects to this module."
+options:
+  id:
+    description:
+      - UUID of a single ACL Rule to return.
+      - The result is a list with that ACL Rule, or an empty list when it does not exist.
+      - Mutually exclusive with O(name), O(unifi_network_filters) and O(unifi_network_filters_raw).
+    type: str
+    aliases: [acl_rule_id, rule_id, unifi_network_acl_rule_id, unifi_network_acl_rule_uuid]
+  name:
+    description:
+      - Return only ACL Rules with exactly this name.
+      - Sent to the API as C(name.eq(...)) and combined with O(unifi_network_filters) using AND.
+    type: str
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
-  - kenmoini.unifi_network.site_id
-
-options:
-  unifi_network_acl_rule_id:
-    description:
-      - The ACL Rule UUID to query for information.
-    required: true
-    aliases: ['acl_rule_uuid', 'acl_rule_id', 'rule', 'rule_id', 'rule_uuid', 'unifi_network_acl_rule_uuid']
-    type: str
-    env:
-      - name: UNIFI_NETWORK_ACL_RULE_ID
-      - name: UNIFI_NETWORK_ACL_RULE_UUID
-
+  - kenmoini.unifi_network.site
+  - kenmoini.unifi_network.filters
+  - kenmoini.unifi_network.attributes
+  - kenmoini.unifi_network.attributes.info
 author:
-    - Ken Moini (@kenmoini)
+  - Ken Moini (@kenmoini)
 '''
 
-EXAMPLES = '''
-# Get the details of a ACL Rule from the Unifi Network
-- name: Get ACL Rule Info
+EXAMPLES = r'''
+- name: List all ACL Rules
   kenmoini.unifi_network.acl_rule_info:
-    unifi_network_url: https://unifi.example.com
-    unifi_network_api_key: 1234567890
-    unifi_network_site_id: 88f7af54-1234-5678-9101-abcdefghijklm
-    unifi_network_acl_rule_id: 1234abcd-5678-efgh-9101-ijklmnopqrst
-  register: r_acl_rule_info
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+  register: r_acl_rules
+
+- name: Set the connection once for every module in this collection
+  module_defaults:
+    group/kenmoini.unifi_network.fullset:
+      unifi_network_url: https://192.168.1.1
+      unifi_network_api_key: "{{ unifi_api_key }}"
+      unifi_network_skip_tls_verify: true
+  block:
+    - name: List ACL Rules
+      kenmoini.unifi_network.acl_rule_info:
+        unifi_network_site_id: default
+      register: r_acl_rules
+
+- name: Get a single ACL Rule by UUID
+  kenmoini.unifi_network.acl_rule_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+    id: 497f6eca-6276-4993-bfeb-53cbbbba6f08
+  register: r_one
+
+- name: Get a ACL Rule by name
+  kenmoini.unifi_network.acl_rule_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+    name: Example
+  register: r_named
+
+- name: Show the UUID of the ACL Rule
+  ansible.builtin.debug:
+    msg: "{{ r_named.acl_rules[0].id }}"
+  when: r_named.acl_rules | length > 0
+
+- name: Filter ACL Rules with one condition
+  kenmoini.unifi_network.acl_rule_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+    filters:
+      property: enabled
+      function: eq
+      value: true
+  register: r_filtered
+
+- name: Combine conditions; filters_match any ORs them, all (default) ANDs them
+  kenmoini.unifi_network.acl_rule_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+    filters_match: any
+    filters:
+      - property: enabled
+        function: eq
+        value: true
+      - property: id
+        function: in
+        value:
+          - 497f6eca-6276-4993-bfeb-53cbbbba6f08
+          - 7f1c8a52-5b6e-4d0e-9f53-2b7a1d0c9e11
+  register: r_any
+
+- name: Use a raw filter expression for NOT or nested logic
+  kenmoini.unifi_network.acl_rule_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+    filters_raw: "not(id.eq('497f6eca-6276-4993-bfeb-53cbbbba6f08'))"
+  register: r_raw
+
+- name: Return at most 10 ACL Rules
+  kenmoini.unifi_network.acl_rule_info:
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+    limit: 10
+  register: r_some
 '''
 
-RETURN = '''
-acl_rule_info:
-    description: The data returned about the ACL Rule at the Site managed by this Unifi Network Application
-    type: object
-    returned: always
+RETURN = r'''
+acl_rules:
+  description:
+    - The matching ACL Rules, exactly as returned by the API (camelCase keys).
+  returned: always
+  type: list
+  elements: dict
+  sample:
+    - action: ALLOW|BLOCK
+      description: string
+      destinationFilter:
+        ipAddressesOrSubnets:
+        - string
+        portFilter:
+        - 1
+        type: IP_ADDRESSES_OR_SUBNETS
+      enabled: true
+      enforcingDeviceFilter:
+        deviceIds:
+        - 497f6eca-6276-4993-bfeb-53cbbbba6f08
+        type: DEVICES
+      id: 497f6eca-6276-4993-bfeb-53cbbbba6f08
+      index: 1
+      metadata:
+        origin: DERIVED
+      name: string
+      protocolFilter:
+      - TCP
+      sourceFilter:
+        ipAddressesOrSubnets:
+        - string
+        portFilter:
+        - 1
+        type: IP_ADDRESSES_OR_SUBNETS
+      type: IPV4
 '''
 
-import requests, copy
-from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.check_response_errors import check_response_errors
-from ..module_utils.auth import UNIFI_NETWORK_ENDPOINT_ARGS
-from ..module_utils.args import (
-    SITE_ID_ARG_SPEC,
-    ACL_RULE_ID_ARG_SPEC,
-)
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.info import run_info_module
 
-def run_module():
-    # define available arguments/parameters a user can pass to the module
-    module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
-    module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
-    module_args.update(copy.deepcopy(ACL_RULE_ID_ARG_SPEC))
-    
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # changed is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
-    result = dict(
-        changed=False,
-        acl_rule_info={}
-    )
-
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
-    )
-
-    # Create the headers for the API request
-    headers = {
-        'Content-Type': 'application/json',
-        'X-API-Key': module.params['unifi_network_api_key']
-    }
-    apiBaseURL = "/proxy/network/integrations"
-
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/acl-rules/' + module.params['unifi_network_acl_rule_id']
-
-    # Perform the API request to get the ACL Rule Info
-    response = requests.get(targetURL, headers=headers, verify=not module.params['unifi_network_skip_tls_verify'])
-    if response.status_code != 200:
-        check_response_errors(module, response, result, context=' while retrieving a specific ACL Rule Info')
-
-    result['acl_rule_info'] = response.json()
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
-    module.exit_json(**result)
 
 def main():
-    run_module()
+    run_info_module(
+        'acl-rules',
+        'acl_rules',
+        id_aliases=['acl_rule_id', 'rule_id', 'unifi_network_acl_rule_id', 'unifi_network_acl_rule_uuid'],
+    )
+
 
 if __name__ == '__main__':
     main()

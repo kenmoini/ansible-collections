@@ -1,119 +1,90 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2025, Ken Moini <ken@kenmoini.com>
 # MIT License
 
-ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+from __future__ import absolute_import, division, print_function
 
-DOCUMENTATION = '''
+__metaclass__ = type
+
+DOCUMENTATION = r'''
 ---
 module: device_action
-short_description: Performs an action on a specific Device from Unifi Network
+short_description: Run an action, such as a restart, on an adopted UniFi device
 version_added: "1.0.0"
 description:
-    - Perform an action on an specific adopted device.
-
+  - Runs an action on an adopted device. The only action the API offers today is V(restart).
+  - This is an imperative operation, so the module always reports a change.
+    In check mode it only verifies that the device exists.
+options:
+  device:
+    description:
+      - The device, given as its name, MAC address or UUID.
+    type: str
+    required: true
+    aliases: [device_id, device_uuid, unifi_network_device_id, unifi_network_device_uuid]
+  action:
+    description:
+      - The action to run.
+    type: str
+    required: true
+    choices: [restart]
+    aliases: [device_action]
 extends_documentation_fragment:
   - kenmoini.unifi_network.common
-  - kenmoini.unifi_network.site_id
-  - kenmoini.unifi_network.device_id
-
-options:
-  device_action:
-    description:
-      - The action to take on the device.
-    required: true
-    type: str
-    options:
-      - restart
-    aliases: ['action']
-
+  - kenmoini.unifi_network.site
+  - kenmoini.unifi_network.attributes
+  - kenmoini.unifi_network.attributes.action
 author:
-    - Ken Moini (@kenmoini)
+  - Ken Moini (@kenmoini)
 '''
 
-EXAMPLES = '''
-# Restart a Device in Unifi Network
-- name: Restart device
+EXAMPLES = r'''
+- name: Restart an access point
   kenmoini.unifi_network.device_action:
-    unifi_network_url: https://unifi.example.com
-    unifi_network_api_key: 1234567890
-    unifi_network_site_id: 88f7af54-1234-5678-9101-abcdefghijklm
-    unifi_network_device_id: 1234abcd-5678-efgh-9101-ijklmnopqrst
-    device_action: restart
+    unifi_network_url: https://192.168.1.1
+    unifi_network_api_key: "{{ unifi_api_key }}"
+    unifi_network_site_id: default
+    device: Living Room AP
+    action: restart
 '''
 
-import requests, copy
+RETURN = r'''
+device:
+  description: The device the action ran on, as returned by the API before the action.
+  returned: always
+  type: dict
+  sample: {"id": "497f6eca-6276-4993-bfeb-53cbbbba6f08", "name": "Living Room AP", "macAddress": "f4:e2:c6:01:02:03", "state": "ONLINE"}
+'''
+
 from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.check_response_errors import check_response_errors
-from ..module_utils.auth import (
-    UNIFI_NETWORK_ENDPOINT_ARGS,
-)
-from ..module_utils.args import (
-    SITE_ID_ARG_SPEC,
-    DEVICE_ID_ARG_SPEC,
-)
 
-def run_module():
-    # define available arguments/parameters a user can pass to the module
-    module_args = copy.deepcopy(UNIFI_NETWORK_ENDPOINT_ARGS)
-    module_args.update(copy.deepcopy(SITE_ID_ARG_SPEC))
-    module_args.update(copy.deepcopy(DEVICE_ID_ARG_SPEC))
-    module_args.update(
-            dict(action=dict(type='str', required=True, choices=['restart'], aliases=['device_action']),
-        )
-    )
-    
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # changed is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
-    result = dict(
-        changed=False,
-    )
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.api import UnifiNetworkClient, UnifiNetworkError
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.args import connection_argument_spec, site_argument_spec
+from ansible_collections.kenmoini.unifi_network.plugins.module_utils.resource import fail_from_exception, resolve_site
 
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
-    )
-
-    # Create the headers for the API request
-    headers = {
-        'Content-Type': 'application/json',
-        'X-API-Key': module.params['unifi_network_api_key']
-    }
-    apiBaseURL = "/proxy/network/integrations"
-
-    targetURL = module.params['unifi_network_url'] + apiBaseURL + '/v1/sites/' + module.params['unifi_network_site_id'] + '/devices/' + module.params['unifi_network_device_id'] + '/actions'
-
-    # Assemble the payload for the action
-    payload = {
-        'action': module.params['action'].upper()
-    }
-
-    # Perform the API request to get the Adopted Devices Info
-    # TODO: Check Mode Enhancement: If this is checkmode, skip the actual POST but query the device list to ensure the device exists
-    response = requests.post(targetURL, headers=headers, json=payload, verify=not module.params['unifi_network_skip_tls_verify'])
-    if response.status_code != 200:
-        check_response_errors(module, response, result, context=' while retrieving a specific Device Info')
-
-    result['changed'] = True
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
-    module.exit_json(**result)
 
 def main():
-    run_module()
+    spec = connection_argument_spec()
+    spec.update(site_argument_spec())
+    spec.update(
+        device=dict(type='str', required=True,
+                    aliases=['device_id', 'device_uuid', 'unifi_network_device_id', 'unifi_network_device_uuid']),
+        action=dict(type='str', required=True, choices=['restart'], aliases=['device_action']),
+    )
+    module = AnsibleModule(argument_spec=spec, supports_check_mode=True)
+    try:
+        client = UnifiNetworkClient.from_module(module)
+        refs = resolve_site(module, client)
+        path = '/v1/sites/%s/devices/%s' % (refs.site_id, refs.resolve('device', module.params['device']))
+        device = client.get(path)
+        if not module.check_mode:
+            client.post(path + '/actions', {'action': module.params['action'].upper()})
+    except UnifiNetworkError as exc:
+        fail_from_exception(module, exc)
+    module.exit_json(changed=True, device=device)
+
 
 if __name__ == '__main__':
     main()
